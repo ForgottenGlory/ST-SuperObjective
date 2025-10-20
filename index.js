@@ -1876,7 +1876,7 @@ function addManualTaskCheckUi() {
     $('#objective-task-complete-current-menu-item').attr('title', 'Mark the current task as completed.').on('click', markTaskCompleted);
 }
 
-// Helper Interval for use with an AbortController for cancellable intervals;
+// Helper Interval for use with an AbortController for cancellable intervals
 function watchdog(ms, signal, task) {
     const intervalID = setInterval(task, ms);
     signal.addEventListener('abort', () => {
@@ -1929,8 +1929,8 @@ function doPopout(e) {
             loadSettings();
         });
 
+        // Setup a watchdog timer to ensure the popup hasn't been cancelled (ex: ESC key)
         watchdog(5000, controller.signal, () => {
-            console.log("watchdog");
             if ($('#objectiveExtensionDrawerContents').length === 0) {
                 console.debug("detected broken popup, restoring");
                 originalElement.empty();
@@ -1946,66 +1946,6 @@ function doPopout(e) {
         $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
     }
 }
-
-/*
-function doPopout(e) {
-    const target = e.target;
-
-    //repurposes the zoomed avatar template to server as a floating div
-    if ($('#objectiveExtensionPopout').length === 0 && $('#objectiveExtensionDrawerContents').length !== 0) {
-        console.debug('did not see popout yet, creating');
-        const originalHTMLClone = $(target).parent().parent().parent().find('.inline-drawer-content').html();
-        const originalElement = $(target).parent().parent().parent().find('.inline-drawer-content');
-        const template = $('#zoomed_avatar_template').html();
-        const controlBarHtml = `<div class="panelControlBar flex-container">
-        <div id="objectiveExtensionPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
-        <div id="objectiveExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow dragClose"></div>
-    </div>`;
-        const newElement = $(template);
-        newElement.attr('id', 'objectiveExtensionPopout')
-            .removeClass('zoomed_avatar')
-            .addClass('draggable')
-            .empty();
-        originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
-        newElement.append(controlBarHtml).append(originalHTMLClone);
-        $('#movingDivs').append(newElement);
-        $('#objectiveExtensionDrawerContents').addClass('scrollY');
-        loadSettings();
-        loadMovingUIState();
-
-        $('#objectiveExtensionPopout').css('display', 'flex').fadeIn(animation_duration);
-        dragElement(newElement);
-
-        const objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
-        const controller = new AbortController();
-
-        //setup listener for close button to restore extensions menu
-        $('#objectiveExtensionPopoutClose').off('click').on('click', function () {
-            $('#objectiveExtensionDrawerContents').removeClass('scrollY');
-            objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
-            $('#objectiveExtensionPopout').fadeOut(animation_duration, () => {
-                originalElement.empty();
-                originalElement.append(objectivePopoutHTML);
-                $('#objectiveExtensionPopout').remove();
-                controller.abort();
-            });
-            loadSettings();
-        });
-
-        watchdog(5000, controller.signal).then(() => {
-            if ($('#objectiveExtensionDrawerContents').length === 0) {
-                originalElement.html = objectivePopoutHTML;
-                controller.abort();
-                loadSettings();
-            }
-        });
-
-    } else {
-        console.debug('saw existing popout, removing');
-        $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
-    }
-}
-*/
 
 // Add template management UI
 function onManageTemplatesClick() {
