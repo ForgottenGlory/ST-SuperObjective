@@ -1935,10 +1935,13 @@ function doPopout(e) {
         watchdog(5000, controller.signal).then(() => {
             if ($('#objectiveExtensionDrawerContents').length === 0) {
                 console.debug("detected broken popup, restoring");
-                //originalElement.html = objectivePopoutHTML;
+                originalElement.empty();
                 originalElement.append(objectivePopoutHTML);
                 loadSettings();
                 controller.abort();
+                if ($('#objectiveExtensionPopout').length !== 0)
+                    $('#objectiveExtensionPopout').remove();
+
             }
         });
 
