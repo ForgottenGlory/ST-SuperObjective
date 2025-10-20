@@ -1881,7 +1881,7 @@ function doPopout(e) {
     const target = e.target;
 
     //repurposes the zoomed avatar template to server as a floating div
-    if ($('#objectiveExtensionPopout').length === 0) {
+    if ($('#objectiveExtensionPopout').length === 0 && $('#objectiveExtensionDrawerContents').length !== 0) {
         console.debug('did not see popout yet, creating');
         const originalHTMLClone = $(target).parent().parent().parent().find('.inline-drawer-content').html();
         const originalElement = $(target).parent().parent().parent().find('.inline-drawer-content');
@@ -1918,6 +1918,7 @@ function doPopout(e) {
         });
     } else {
         console.debug('saw existing popout, removing');
+        // Bugfix for premature closing of popout via esc key (not triggering click event)
         if ($('#objectiveExtensionDrawerContents').length === 0) {
             $(target).parent().parent().parent().find('.inline-drawer-content').html(objectivePopoutHTML);
             loadSettings();
