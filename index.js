@@ -1933,6 +1933,7 @@ function doPopout(e) {
         });
 
         watchdog(5000, controller.signal).then(() => {
+            console.log("watchdog");
             if ($('#objectiveExtensionDrawerContents').length === 0) {
                 console.debug("detected broken popup, restoring");
                 originalElement.empty();
