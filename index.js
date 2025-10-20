@@ -1918,7 +1918,7 @@ function doPopout(e) {
         });
     } else {
         console.debug('saw existing popout, removing');
-        if ($('objectiveExtensionDrawerContents').length === 0) {
+        if ($('#objectiveExtensionDrawerContents').length === 0) {
             $(target).parent().parent().parent().find('.inline-drawer-content').html(objectivePopoutHTML);
             loadSettings();
         }
