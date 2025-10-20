@@ -1876,6 +1876,7 @@ function addManualTaskCheckUi() {
     $('#objective-task-complete-current-menu-item').attr('title', 'Mark the current task as completed.').on('click', markTaskCompleted);
 }
 
+var objectivePopoutHTML;
 function doPopout(e) {
     const target = e.target;
 
@@ -1894,7 +1895,7 @@ function doPopout(e) {
             .removeClass('zoomed_avatar')
             .addClass('draggable')
             .empty();
-        //originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
+        originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
         newElement.append(controlBarHtml).append(originalHTMLClone);
         $('#movingDivs').append(newElement);
         $('#objectiveExtensionDrawerContents').addClass('scrollY');
@@ -1907,7 +1908,7 @@ function doPopout(e) {
         //setup listener for close button to restore extensions menu
         $('#objectiveExtensionPopoutClose').off('click').on('click', function () {
             $('#objectiveExtensionDrawerContents').removeClass('scrollY');
-            const objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
+            objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
             $('#objectiveExtensionPopout').fadeOut(animation_duration, () => {
                 originalElement.empty();
                 originalElement.append(objectivePopoutHTML);
