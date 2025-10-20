@@ -1939,9 +1939,7 @@ function doPopout(e) {
                 originalElement.append(objectivePopoutHTML);
                 loadSettings();
                 controller.abort();
-                if ($('#objectiveExtensionPopout').length !== 0)
-                    $('#objectiveExtensionPopout').remove();
-
+                $('#objectiveExtensionPopout').remove();
             }
         });
 
