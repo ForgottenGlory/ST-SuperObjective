@@ -34,8 +34,8 @@ let injectionCounter = 0;
 
 const defaultPrompts = {
     'createTask': 'Ignore previous instructions. Please generate a numbered list of plain text tasks to complete an objective. The objective that you must make a numbered task list for is: "{{objective}}". The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly. Include the objective as the final task.\n\nThe list should be formatted using a number followed by a fullstop and the task on each line, e.g. "1. Take over the world". Include only the list in your reply.',
-    'checkTaskCompleted': 'Ignore previous instructions. Determine if this task is completed: [{{task}}]. To do this, examine the most recent messages. Your response must only contain either true or false, and nothing else. Example output: true',
-    'currentTask': 'Your current task is [{{task}}]. Balance existing roleplay with completing this task.',
+    'checkTaskCompleted': 'Ignore previous instructions. Determine if this task is completed: [{{currentTask}}]. To do this, examine the most recent messages. Your response must only contain either true or false, and nothing else. Example output: true',
+    'currentTask': 'Your current task is [{{currentTask}}]. Balance existing roleplay with completing this task.',
     'completedTasks': 'Recently completed tasks: {{completedTasks}}',
     'upcomingTasks': 'Upcoming tasks: {{upcomingTasks}}',
     'additionalTasks': 'Ignore previous instructions. Please generate additional numbered tasks to complete the objective: "{{objective}}". The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly.\n\nThe following tasks have already been created:\n{{existingTasks}}\n\nPlease generate additional tasks that complement these existing tasks. Continue the numbering from where the list left off. Do not repeat any existing tasks.\n\nThe list should be formatted using a number followed by a fullstop and the task on each line, e.g. "4. Investigate the mysterious cave". Include only the list in your reply.'
@@ -959,7 +959,7 @@ function onEditPromptClick() {
             <input id="objective-custom-prompt-import" class="menu_button" type="submit" value="Import Prompts" />
         </div>
         <hr class="m-t-1 m-b-1">
-        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{task}} plus any other standard template variables. Save template to persist changes.</small>
+        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{currentTask}} plus any other standard template variables. Save template to persist changes.</small>
         <hr class="m-t-1 m-b-1">
         <div>
             <label for="objective-prompt-generate">Generation Prompt</label>
@@ -1876,6 +1876,14 @@ function addManualTaskCheckUi() {
     $('#objective-task-complete-current-menu-item').attr('title', 'Mark the current task as completed.').on('click', markTaskCompleted);
 }
 
+// Helper Interval for use with an AbortController for cancellable intervals
+function watchdog(ms, signal, task) {
+    const intervalID = setInterval(task, ms);
+    signal.addEventListener('abort', () => {
+        clearInterval(intervalID);
+    });
+}
+
 function doPopout(e) {
     const target = e.target;
 
@@ -1888,9 +1896,10 @@ function doPopout(e) {
         const controlBarHtml = `<div class="panelControlBar flex-container">
         <div id="objectiveExtensionPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
         <div id="objectiveExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow dragClose"></div>
-    </div>`;
+        </div>`;
         const newElement = $(template);
-        newElement.attr('id', 'objectiveExtensionPopout')
+        newElement
+            .attr('id', 'objectiveExtensionPopout')
             .removeClass('zoomed_avatar')
             .addClass('draggable')
             .empty();
@@ -1904,17 +1913,34 @@ function doPopout(e) {
         $('#objectiveExtensionPopout').css('display', 'flex').fadeIn(animation_duration);
         dragElement(newElement);
 
+        var objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
+        const controller = new AbortController();
+
         //setup listener for close button to restore extensions menu
         $('#objectiveExtensionPopoutClose').off('click').on('click', function () {
             $('#objectiveExtensionDrawerContents').removeClass('scrollY');
-            const objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
+            objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
             $('#objectiveExtensionPopout').fadeOut(animation_duration, () => {
                 originalElement.empty();
                 originalElement.append(objectivePopoutHTML);
                 $('#objectiveExtensionPopout').remove();
+                controller.abort();
             });
             loadSettings();
         });
+
+        // Setup a watchdog timer to ensure the popup hasn't been cancelled (ex: ESC key)
+        watchdog(5000, controller.signal, () => {
+            if ($('#objectiveExtensionDrawerContents').length === 0) {
+                console.debug("detected broken popup, restoring");
+                originalElement.empty();
+                originalElement.append(objectivePopoutHTML);
+                loadSettings();
+                controller.abort();
+                $('#objectiveExtensionPopout').remove();
+            }
+        });
+
     } else {
         console.debug('saw existing popout, removing');
         $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
