@@ -1876,7 +1876,7 @@ function addManualTaskCheckUi() {
     $('#objective-task-complete-current-menu-item').attr('title', 'Mark the current task as completed.').on('click', markTaskCompleted);
 }
 
-var objectivePopoutHTML;
+var watchdog;
 function doPopout(e) {
     const target = e.target;
 
@@ -1905,6 +1905,8 @@ function doPopout(e) {
         $('#objectiveExtensionPopout').css('display', 'flex').fadeIn(animation_duration);
         dragElement(newElement);
 
+        const objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
+
         //setup listener for close button to restore extensions menu
         $('#objectiveExtensionPopoutClose').off('click').on('click', function () {
             $('#objectiveExtensionDrawerContents').removeClass('scrollY');
@@ -1916,15 +1918,23 @@ function doPopout(e) {
             });
             loadSettings();
         });
+
+        // Create a timer to check for false closes.
+        clearTimeout(watchdog);
+        const watchdogAction = () => {
+            if ($('#objectiveExtensionDrawerContents').length === 0)
+            {
+                originalElement.html = objectivePopoutHTML;
+                loadSettings();
+            }
+            else
+                watchdog = setTimeout(watchdogAction, 15000);
+        };
+        watchdog = setTimeout( watchdogAction, 15000);
+
     } else {
         console.debug('saw existing popout, removing');
-        // Bugfix for premature closing of popout via esc key (not triggering click event)
-        if ($('#objectiveExtensionDrawerContents').length === 0) {
-            $(target).parent().parent().parent().find('.inline-drawer-content').html(objectivePopoutHTML);
-            loadSettings();
-        }
-        else
-            $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
+        $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
     }
 }
 
