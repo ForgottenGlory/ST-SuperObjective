@@ -34,8 +34,8 @@ let injectionCounter = 0;
 
 const defaultPrompts = {
     'createTask': 'Ignore previous instructions. Please generate a numbered list of plain text tasks to complete an objective. The objective that you must make a numbered task list for is: "{{objective}}". The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly. Include the objective as the final task.\n\nThe list should be formatted using a number followed by a fullstop and the task on each line, e.g. "1. Take over the world". Include only the list in your reply.',
-    'checkTaskCompleted': 'Ignore previous instructions. Determine if this task is completed: [{{task}}]. To do this, examine the most recent messages. Your response must only contain either true or false, and nothing else. Example output: true',
-    'currentTask': 'Your current task is [{{task}}]. Balance existing roleplay with completing this task.',
+    'checkTaskCompleted': 'Ignore previous instructions. Determine if this task is completed: [{{currentTask}}]. To do this, examine the most recent messages. Your response must only contain either true or false, and nothing else. Example output: true',
+    'currentTask': 'Your current task is [{{currentTask}}]. Balance existing roleplay with completing this task.',
     'completedTasks': 'Recently completed tasks: {{completedTasks}}',
     'upcomingTasks': 'Upcoming tasks: {{upcomingTasks}}',
     'additionalTasks': 'Ignore previous instructions. Please generate additional numbered tasks to complete the objective: "{{objective}}". The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly.\n\nThe following tasks have already been created:\n{{existingTasks}}\n\nPlease generate additional tasks that complement these existing tasks. Continue the numbering from where the list left off. Do not repeat any existing tasks.\n\nThe list should be formatted using a number followed by a fullstop and the task on each line, e.g. "4. Investigate the mysterious cave". Include only the list in your reply.'
@@ -959,7 +959,7 @@ function onEditPromptClick() {
             <input id="objective-custom-prompt-import" class="menu_button" type="submit" value="Import Prompts" />
         </div>
         <hr class="m-t-1 m-b-1">
-        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{task}} plus any other standard template variables. Save template to persist changes.</small>
+        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{currentTask}} plus any other standard template variables. Save template to persist changes.</small>
         <hr class="m-t-1 m-b-1">
         <div>
             <label for="objective-prompt-generate">Generation Prompt</label>
@@ -1894,7 +1894,7 @@ function doPopout(e) {
             .removeClass('zoomed_avatar')
             .addClass('draggable')
             .empty();
-        originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
+        //originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
         newElement.append(controlBarHtml).append(originalHTMLClone);
         $('#movingDivs').append(newElement);
         $('#objectiveExtensionDrawerContents').addClass('scrollY');
