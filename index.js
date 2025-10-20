@@ -1918,7 +1918,12 @@ function doPopout(e) {
         });
     } else {
         console.debug('saw existing popout, removing');
-        $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
+        if ($('objectiveExtensionDrawerContents').length === 0) {
+            $(target).parent().parent().parent().find('.inline-drawer-content').append(objectivePopoutHTML);
+            loadSettings();
+        }
+        else
+            $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
     }
 }
 
