@@ -1877,13 +1877,10 @@ function addManualTaskCheckUi() {
 }
 
 // Helper Interval for use with an AbortController for cancellable intervals;
-function watchdog(ms, signal) {
-    return new Promise((resolve,reject) => {
-        const intervalID = setInterval(resolve, ms);
-        signal.addEventListener('abort', () => {
-            clearInterval(intervalID);
-            reject(new Error ('Watchdog aborted.'));
-        });
+function watchdog(ms, signal, task) {
+    const intervalID = setInterval(task, ms);
+    signal.addEventListener('abort', () => {
+        clearInterval(intervalID);
     });
 }
 
@@ -1932,7 +1929,7 @@ function doPopout(e) {
             loadSettings();
         });
 
-        watchdog(5000, controller.signal).then(() => {
+        watchdog(5000, controller.signal, () => {
             console.log("watchdog");
             if ($('#objectiveExtensionDrawerContents').length === 0) {
                 console.debug("detected broken popup, restoring");
