@@ -1917,6 +1917,7 @@ function doPopout(e) {
         dragElement(newElement);
 
         var objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
+        const controller = new AbortController();
 
         //setup listener for close button to restore extensions menu
         $('#objectiveExtensionPopoutClose').off('click').on('click', function () {
@@ -1926,9 +1927,20 @@ function doPopout(e) {
                 originalElement.empty();
                 originalElement.append(objectivePopoutHTML);
                 $('#objectiveExtensionPopout').remove();
+                controller.abort();
             });
             loadSettings();
         });
+
+        watchdog(5000, controller.signal).then(() => {
+            if ($('#objectiveExtensionDrawerContents').length === 0) {
+                console.debug("detected broken popup, restoring");
+                originalElement.html = objectivePopoutHTML;
+                controller.abort();
+                loadSettings();
+            }
+        });
+
     } else {
         console.debug('saw existing popout, removing');
         $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
