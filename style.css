@@ -295,7 +295,7 @@
     display: grid;
     grid-template-rows: auto 1fr;
     width: min(96vw, 1600px);
-    height: min(96vh, 96dvh);
+    height: min(85vh, 85dvh);
     margin: auto;
     overflow: hidden;
     gap: 10px;
@@ -308,9 +308,9 @@
 /* ---- Header row ---- */
 .objective-workspace-header {
     display: grid;
-    grid-template-columns: minmax(180px, 1fr) 2fr auto;
+    grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr) auto;
     gap: 10px;
-    align-items: stretch;
+    align-items: start;
 }
 
 .objective-workspace-brand {
@@ -380,9 +380,10 @@
 }
 
 .objective-workspace-close-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
+    position: absolute !important;
+    top: 6px !important;
+    right: 6px !important;
+    left: auto !important;
     z-index: 2;
     width: 28px;
     height: 28px;
