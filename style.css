@@ -381,8 +381,8 @@
 }
 
 .objective-workspace-col {
-    display: grid;
-    grid-template-rows: auto 1fr auto;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
     min-height: 0;
     padding: 8px;
@@ -423,9 +423,10 @@
     flex-wrap: wrap;
 }
 
-/* Scrollable lists fill the middle row of the column grid. */
+/* Lists fill the available column space and scroll internally. */
 .objective-workspace-list,
 .objective-workspace-tasks-list {
+    flex: 1;
     min-height: 0;
     overflow-y: auto;
 }
@@ -469,10 +470,6 @@
 }
 
 /* ---- Subtasks panel: nested two-column grid for completed/upcoming ---- */
-.objective-workspace-subtasks {
-    grid-template-rows: auto auto 1fr;
-}
-
 .objective-workspace-subtasks-header {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -501,6 +498,7 @@
 }
 
 .objective-workspace-subtasks-cols {
+    flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px;
