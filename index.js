@@ -34,8 +34,8 @@ let injectionCounter = 0;
 
 const defaultPrompts = {
     'createTask': 'Ignore previous instructions. Please generate a numbered list of plain text tasks to complete an objective. The objective that you must make a numbered task list for is: "{{objective}}". The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly. Include the objective as the final task.\n\nThe list should be formatted using a number followed by a fullstop and the task on each line, e.g. "1. Take over the world". Include only the list in your reply.',
-    'checkTaskCompleted': 'Ignore previous instructions. Determine if this task is completed: [{{task}}]. To do this, examine the most recent messages. Your response must only contain either true or false, and nothing else. Example output: true',
-    'currentTask': 'Your current task is [{{task}}]. Balance existing roleplay with completing this task.',
+    'checkTaskCompleted': 'Ignore previous instructions. Determine if this task is completed: [{{currentTask}}]. To do this, examine the most recent messages. Your response must only contain either true or false, and nothing else. Example output: true',
+    'currentTask': 'Your current task is [{{currentTask}}]. Balance existing roleplay with completing this task.',
     'completedTasks': 'Recently completed tasks: {{completedTasks}}',
     'upcomingTasks': 'Upcoming tasks: {{upcomingTasks}}',
     'additionalTasks': 'Ignore previous instructions. Please generate additional numbered tasks to complete the objective: "{{objective}}". The tasks created should take into account the character traits of {{char}}. These tasks may or may not involve {{user}} directly.\n\nThe following tasks have already been created:\n{{existingTasks}}\n\nPlease generate additional tasks that complement these existing tasks. Continue the numbering from where the list left off. Do not repeat any existing tasks.\n\nThe list should be formatted using a number followed by a fullstop and the task on each line, e.g. "4. Investigate the mysterious cave". Include only the list in your reply.'
@@ -56,6 +56,9 @@ function getTaskById(taskId) {
 }
 
 function getTaskByIdRecurse(taskId, task) {
+    if (!task) {
+        return null;
+    }
     if (task.id == taskId) {
         return task;
     }
@@ -66,6 +69,20 @@ function getTaskByIdRecurse(taskId, task) {
         }
     }
     return null;
+}
+
+// Escape arbitrary text for safe interpolation into HTML strings. Used for
+// task descriptions, objective text, etc. — all user-controlled content that
+// would otherwise allow self-XSS via crafted import files (e.g. an `<img
+// onerror=...>` description in a malicious template JSON).
+function escapeHtml(value) {
+    if (value === null || value === undefined) return '';
+    return String(value)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 function substituteParamsPrompts(content, substituteGlobal) {
@@ -79,15 +96,20 @@ function substituteParamsPrompts(content, substituteGlobal) {
     // Always replace objective regardless of other settings
     result = result.replace(/{{objective}}/gi, currentObjective?.description ?? '');
 
+    // Always replace {{task}} and {{currentTask}} (treated as aliases). Older
+    // versions only substituted {{task}} when substituteGlobal=true, which
+    // silently broke checkTaskCompleted (the LLM saw the literal string).
+    const taskDesc = currentTask?.description ?? '';
+    result = result.replace(/{{task}}/gi, taskDesc);
+    result = result.replace(/{{currentTask}}/gi, taskDesc);
+
     // Replace global params regardless of injection frequency
     if (substituteGlobal) {
-        result = result.replace(/{{task}}/gi, currentTask?.description ?? '');
         result = result.replace(/{{parent}}/gi, currentTask?.parent?.description ?? '');
     }
 
     // Replace task-specific params
     if (currentTask && currentTask.id) {
-        result = result.replace(/{{currentTask}}/g, currentTask.description);
 
         // Handle completed tasks if needed
         if (result.includes('{{completedTasks}}')) {
@@ -115,8 +137,8 @@ function substituteParamsPrompts(content, substituteGlobal) {
             }
         }
     } else {
-        // If there's no current task, remove task-related placeholders
-        result = result.replace(/{{currentTask}}/g, '');
+        // If there's no current task, remove the remaining task-list placeholders
+        // ({{task}}/{{currentTask}} were already substituted above, possibly with '').
         result = result.replace(/{{completedTasks}}/g, '');
         result = result.replace(/{{upcomingTasks}}/g, '');
     }
@@ -129,22 +151,38 @@ async function generateTasks() {
     const prompt = substituteParamsPrompts(objectivePrompts.createTask, false);
     console.log('Generating tasks for objective with prompt');
     toastr.info('Generating tasks for objective', 'Please wait...');
-    const taskResponse = await generateQuietPrompt(prompt, false, false);
 
-    // Clear all existing objective tasks when generating
-    currentObjective.children = [];
+    let taskResponse;
+    try {
+        taskResponse = await generateQuietPrompt(prompt, false, false);
+    } catch (err) {
+        console.error('Failed to generate tasks:', err);
+        toastr.error('Failed to generate tasks. Existing tasks were preserved.');
+        return;
+    }
+
     const numberedListPattern = /^\d+\./;
+    const parsedTasks = taskResponse
+        .split('\n')
+        .map(x => x.trim())
+        .filter(x => numberedListPattern.test(x))
+        .map(x => x.replace(numberedListPattern, '').trim())
+        .filter(x => x.length > 0);
 
-    // Track the first task we add
+    // Bail out before destroying existing tasks if the response had nothing usable.
+    if (parsedTasks.length === 0) {
+        console.warn('Task generation returned no parseable tasks. Existing tasks preserved. Response was:', taskResponse);
+        toastr.warning('No tasks were generated. Existing tasks were preserved.');
+        return;
+    }
+
+    // Now it's safe to clear and replace.
+    currentObjective.children = [];
     let firstTask = null;
-
-    // Create tasks from generated task list
-    for (const task of taskResponse.split('\n').map(x => x.trim())) {
-        if (task.match(numberedListPattern) != null) {
-            const newTask = currentObjective.addTask(task.replace(numberedListPattern, '').trim());
-            if (!firstTask) {
-                firstTask = newTask;
-            }
+    for (const description of parsedTasks) {
+        const newTask = currentObjective.addTask(description);
+        if (!firstTask) {
+            firstTask = newTask;
         }
     }
     updateUiTaskList();
@@ -156,7 +194,7 @@ async function generateTasks() {
         setCurrentTask();
     }
 
-    console.info(`Response for Objective: '${currentObjective.description}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(currentObjective.children.map(v => { return v.toSaveState(); }), null, 2)} `);
+    console.info(`Response for Objective: '${currentObjective.description}' was \n'${taskResponse}', \nwhich created tasks \n${JSON.stringify(currentObjective.children.map(v => v.toSaveStateRecurse()), null, 2)} `);
     toastr.success(`Generated ${currentObjective.children.length} tasks`, 'Done!');
 }
 
@@ -183,7 +221,15 @@ async function generateAdditionalTasks() {
     console.log('Generating additional tasks for objective');
     toastr.info('Generating additional tasks', 'Please wait...');
 
-    const taskResponse = await generateQuietPrompt(additionalPrompt, false, false);
+    let taskResponse;
+    try {
+        taskResponse = await generateQuietPrompt(additionalPrompt, false, false);
+    } catch (err) {
+        console.error('Failed to generate additional tasks:', err);
+        toastr.error('Failed to generate additional tasks.');
+        return;
+    }
+
     const initialTaskCount = currentObjective.children.length;
     const numberedListPattern = /^\d+\./;
 
@@ -193,7 +239,9 @@ async function generateAdditionalTasks() {
     // Add new tasks to the existing list
     for (const task of taskResponse.split('\n').map(x => x.trim())) {
         if (task.match(numberedListPattern) != null) {
-            const newTask = currentObjective.addTask(task.replace(numberedListPattern, '').trim());
+            const description = task.replace(numberedListPattern, '').trim();
+            if (!description) continue;
+            const newTask = currentObjective.addTask(description);
             if (!firstNewTask) {
                 firstNewTask = newTask;
             }
@@ -221,39 +269,25 @@ async function generateAdditionalTasks() {
 }
 
 async function markTaskCompleted() {
-    // Make sure there's a current task
-    if (jQuery.isEmptyObject(currentTask)) {
+    if (!currentTask) {
         console.warn('No current task to mark as completed');
         toastr.warning('No current task to mark as completed');
         return;
     }
 
-    console.info(`User determined task '${currentTask.description}' is completed.`);
-
-    // Store the current task ID before completing it
-    const taskId = currentTask.id;
-
-    // Only add to recently completed tasks if it wasn't already completed
-    if (!currentTask.completed) {
-        currentTask.completeTask();
-
-        // After completing the task, find the next task and highlight it
-        const nextTask = getNextIncompleteTaskRecurse(taskTree);
-        if (nextTask) {
-            setCurrentTask(nextTask.id);
-        } else {
-            // If no next task, keep the completed task highlighted
-            setCurrentTask(taskId);
-        }
-    } else {
+    if (currentTask.completed) {
         toastr.info('Task was already marked as completed');
+        return;
     }
+
+    console.info(`User determined task '${currentTask.description}' is completed.`);
+    // completeTask handles history, stats, parent-cascade, and next-task selection.
+    currentTask.completeTask();
 }
 
 // Call Quiet Generate to check if a task is completed
 async function checkTaskCompleted() {
-    // Make sure there are tasks
-    if (jQuery.isEmptyObject(currentTask)) {
+    if (!currentTask) {
         console.warn('No current task to check');
         return String(false);
     }
@@ -375,7 +409,7 @@ function getNextIncompleteTaskRecurse(task) {
 
 // Increment elapsed messages count for the current task
 function incrementTaskElapsedMessages() {
-    if (!currentTask || jQuery.isEmptyObject(currentTask) || currentTask.completed) {
+    if (!currentTask || currentTask.completed) {
         return;
     }
 
@@ -397,25 +431,21 @@ function setCurrentTask(taskId = null, skipSave = false) {
     const context = getContext();
 
     // Store the previous current task ID
-    const previousTaskId = currentTask && !jQuery.isEmptyObject(currentTask) ? currentTask.id : null;
-
-    // TODO: Should probably null this rather than set empty object
-    currentTask = {};
+    const previousTaskId = currentTask?.id ?? null;
 
     // Find the task, either next incomplete, or by provided taskId
     if (taskId === null) {
-        currentTask = getNextIncompleteTaskRecurse(taskTree) || {};
+        currentTask = getNextIncompleteTaskRecurse(taskTree);
     } else {
         try {
             currentTask = getTaskById(taskId);
         } catch (e) {
             console.warn(`Failed to set current task with ID ${taskId}: ${e}`);
-            currentTask = getNextIncompleteTaskRecurse(taskTree) || {};
+            currentTask = getNextIncompleteTaskRecurse(taskTree);
         }
     }
 
-    // Don't just check for a current task, check if it has data
-    const description = currentTask.description || null;
+    const description = currentTask?.description ?? null;
     if (description) {
         // If this is a different task than before, reset the elapsed messages counter
         if (previousTaskId !== currentTask.id) {
@@ -498,17 +528,11 @@ function setCurrentTask(taskId = null, skipSave = false) {
     }
 }
 
-function getHighestTaskIdRecurse(task) {
-    let nextId = task.id;
-
-    for (const childTask of task.children) {
-        const childId = getHighestTaskIdRecurse(childTask);
-        if (childId > nextId) {
-            nextId = childId;
-        }
-    }
-    return nextId;
-}
+// Monotonic task-id counter. The previous implementation rescanned the entire
+// tree from inside ObjectiveTask's constructor (O(n) per task → O(n²) for n
+// adds). This counter is updated whenever a task is constructed with an
+// explicit id (during state load) so it stays ahead of any existing ids.
+let nextTaskId = 1;
 
 //###############################//
 //#         Task Class          #//
@@ -533,7 +557,14 @@ class ObjectiveTask {
     durationButton; // UI element for duration settings
 
     constructor({ id = undefined, description, completed = false, parentId = '', completionDate = null, duration = 0, elapsedMessages = 0 }) {
-        this.id = id === undefined ? getHighestTaskIdRecurse(taskTree) + 1 : id;
+        if (id === undefined) {
+            this.id = nextTaskId++;
+        } else {
+            this.id = id;
+            if (typeof id === 'number' && id >= nextTaskId) {
+                nextTaskId = id + 1;
+            }
+        }
         this.description = description;
         this.completed = completed;
         this.parentId = parentId;
@@ -579,66 +610,56 @@ class ObjectiveTask {
         }
     }
 
-    // Used to set parent to complete when all child tasks are completed
+    // Used to set parent to complete when all child tasks are completed.
+    // Walks up the chain so that a grandparent auto-completes when its
+    // entire subtree is done.
     checkParentComplete() {
-        let all_completed = true;
-        if (this.parentId !== '') {
-            const parent = getTaskById(this.parentId);
-            for (const child of parent.children) {
-                if (!child.completed) {
-                    all_completed = false;
-                    break;
-                }
-            }
-            if (all_completed) {
-                parent.completed = true;
-                console.info(`Parent task '${parent.description}' completed after all child tasks complated.`);
-                updateUiTaskList();
-            } else {
-                parent.completed = false;
-            }
+        if (this.parentId === '') {
+            return;
+        }
+        const parent = getTaskById(this.parentId);
+        if (!parent) return;
+
+        const allChildrenComplete = parent.children.every(child => child.completed);
+        const wasCompleted = parent.completed;
+        parent.completed = allChildrenComplete;
+
+        if (allChildrenComplete && !wasCompleted) {
+            console.info(`Parent task '${parent.description}' completed after all child tasks completed.`);
+        }
+
+        if (parent.completed !== wasCompleted) {
+            updateUiTaskList();
+            // Recurse upward so grandparents (etc.) get updated too.
+            parent.checkParentComplete();
         }
     }
 
-    // Complete the current task, setting next task to next incomplete task
+    // Run the post-completion side-effects (history, stats, parent cascade,
+    // pick a next task, redraw). Pulled out so onCompleteClick can reuse it
+    // after performing its own cascade-to-children, without re-tripping
+    // completeTask's "already completed" guard.
+    _runCompletionSideEffects() {
+        console.info(`Task successfully completed: ${JSON.stringify(this.description)}`);
+        addToCompletionHistory(this);
+        addToRecentlyCompletedTasks(this);
+        updateStatistics(true);
+        this.checkParentComplete();
+
+        const nextTask = getNextIncompleteTaskRecurse(taskTree);
+        setCurrentTask(nextTask ? nextTask.id : this.id);
+        updateUiTaskList();
+    }
+
+    // Complete this task, setting next task to next incomplete task.
     completeTask() {
-        // If already completed, don't do anything
         if (this.completed) {
             return;
         }
-
-        // Store the current task ID before completing it
-        const taskId = this.id;
-
         this.completed = true;
         this.completionDate = new Date().toISOString();
-
-        // Reset the elapsed messages counter when the task is completed
         this.elapsedMessages = 0;
-
-        console.info(`Task successfully completed: ${JSON.stringify(this.description)}`);
-
-        // Add to completion history
-        addToCompletionHistory(this);
-
-        // Add to recently completed tasks
-        addToRecentlyCompletedTasks(this);
-
-        // Update statistics
-        updateStatistics(true);
-
-        this.checkParentComplete();
-
-        // Find the next task to highlight
-        const nextTask = getNextIncompleteTaskRecurse(taskTree);
-        if (nextTask) {
-            setCurrentTask(nextTask.id);
-        } else {
-            // If no next task, keep the completed task highlighted
-            setCurrentTask(taskId);
-        }
-
-        updateUiTaskList();
+        this._runCompletionSideEffects();
     }
 
     // Add a single task to the UI and attach event listeners for user edits
@@ -649,7 +670,7 @@ class ObjectiveTask {
             <div id="objective-task-label-${this.id}" class="flex1 checkbox_label alignItemsCenter">
                 <div id="objective-task-drag-${this.id}" class="objective-task-button fa-solid fa-grip-vertical fa-fw fa-lg" title="Drag to reorder"></div>
                 <input id="objective-task-complete-${this.id}" type="checkbox" ${this.completed ? 'checked' : ''}>
-                <span id="objective-task-description-${this.id}" class="text_pole objective-task" contenteditable="true">${this.description}</span>
+                <span id="objective-task-description-${this.id}" class="text_pole objective-task" contenteditable="true">${escapeHtml(this.description)}</span>
                 <div id="objective-task-delete-${this.id}" class="objective-task-button fa-solid fa-xmark fa-fw fa-lg" title="Delete Task"></div>
                 <div id="objective-task-add-${this.id}" class="objective-task-button fa-solid fa-plus fa-fw fa-lg" title="Add Task"></div>
                 <div id="objective-task-add-branch-${this.id}" class="objective-task-button fa-solid fa-code-fork fa-fw fa-lg" title="Branch Task"></div>
@@ -694,7 +715,7 @@ class ObjectiveTask {
         // Add event listeners and set properties
         $(`#objective-task-complete-${this.id}`).prop('checked', this.completed);
         $(`#objective-task-complete-${this.id}`).on('click', () => (this.onCompleteClick()));
-        $(`#objective-task-description-${this.id}`).on('keyup', () => (this.onDescriptionUpdate()));
+        $(`#objective-task-description-${this.id}`).on('input', () => (this.onDescriptionUpdate()));
         $(`#objective-task-description-${this.id}`).on('focusout', () => (this.onDescriptionFocusout()));
         $(`#objective-task-delete-${this.id}`).on('click', () => (this.onDeleteClick()));
         $(`#objective-task-add-${this.id}`).on('click', () => (this.onAddClick()));
@@ -734,49 +755,25 @@ class ObjectiveTask {
     }
     onCompleteClick() {
         const wasCompleted = this.completed;
-        this.complete(this.completedCheckbox.prop('checked'));
+        const isNowChecked = this.completedCheckbox.prop('checked');
 
-        // If task was just marked as completed, add to recently completed tasks
-        if (!wasCompleted && this.completed) {
-            // Set completion date if it doesn't exist
-            if (!this.completionDate) {
-                this.completionDate = new Date().toISOString();
-            }
+        // Cascade the new state to descendants — checking a parent marks all
+        // sub-tasks done, unchecking marks them undone.
+        this.complete(isNowChecked);
+        this.elapsedMessages = 0;
 
-            // Add to recently completed tasks
-            addToRecentlyCompletedTasks(this);
-
-            // Add to completion history
-            addToCompletionHistory(this);
-
-            // Update statistics
-            updateStatistics(true);
-
-            // Find the next incomplete task to highlight
-            const nextTask = getNextIncompleteTaskRecurse(taskTree);
-            if (nextTask) {
-                setCurrentTask(nextTask.id);
-            } else {
-                // If no next task, keep the completed task highlighted
-                setCurrentTask(this.id);
-            }
+        if (!wasCompleted && isNowChecked) {
+            this._runCompletionSideEffects();
+            return;
         }
-        // If task was just marked as not completed, remove from recently completed tasks
-        else if (wasCompleted && !this.completed) {
-            // Remove from recently completed tasks
+
+        if (wasCompleted && !isNowChecked) {
             recentlyCompletedTasks = recentlyCompletedTasks.filter(task => task.id !== this.id);
-
-            // Update the UI with the new count
             updateCompletedTasksCount();
-
-            // This task is now the first incomplete task, so highlight it
-            setCurrentTask(this.id);
-        }
-        // If the completion state didn't change, just keep the current task highlighted
-        else {
-            setCurrentTask(this.id);
         }
 
+        // For uncheck and unchanged paths: refresh highlight and tree state.
+        setCurrentTask(this.id);
         this.checkParentComplete();
         updateUiTaskList();
     }
@@ -947,7 +944,7 @@ function onEditPromptClick() {
     <div class="objective_prompt_modal">
         <div class="objective_prompt_block justifyCenter">
             <label for="objective-custom-prompt-select">Custom Prompt Select</label>
-            <select id="objective-custom-prompt-select" class="text_pole"><select>
+            <select id="objective-custom-prompt-select" class="text_pole"></select>
         </div>
         <div class="objective_prompt_block justifyCenter">
             <input id="objective-custom-prompt-new" class="menu_button" type="submit" value="New Prompt" />
@@ -959,7 +956,7 @@ function onEditPromptClick() {
             <input id="objective-custom-prompt-import" class="menu_button" type="submit" value="Import Prompts" />
         </div>
         <hr class="m-t-1 m-b-1">
-        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{task}} plus any other standard template variables. Save template to persist changes.</small>
+        <small>Edit prompts used by Objective for this session. You can use {{objective}} or {{currentTask}} ({{task}} is also accepted) plus any other standard template variables. Save template to persist changes.</small>
         <hr class="m-t-1 m-b-1">
         <div>
             <label for="objective-prompt-generate">Generation Prompt</label>
@@ -1475,9 +1472,11 @@ function updateUiTaskList() {
         const firstIncompleteTask = currentObjective.children.find(task => !task.completed);
         if (firstIncompleteTask) {
             setCurrentTask(firstIncompleteTask.id, true);
-        } else if (currentObjective.children.length > 0) {
-            // If all tasks are completed, highlight the first task
-            setCurrentTask(currentObjective.children[0].id, true);
+        } else {
+            // All tasks are completed: clear the "current task" so the prompt
+            // injection doesn't misleadingly tell the LLM a completed task is
+            // still in progress.
+            setCurrentTask(null, true);
         }
     } else {
         // Show button to add tasks if there are none
@@ -1502,9 +1501,15 @@ function updateUiTaskList() {
 function initSortable() {
     // Check if jQuery UI sortable is available
     if ($.fn.sortable) {
+        // Note: do NOT call .disableSelection() here. It attaches a global
+        // mousedown.preventDefault() that blocks focus into contenteditable
+        // task spans on Chrome/Chromium, making task descriptions uneditable.
+        // The `handle` option already restricts drag-init to the grip icon,
+        // and `cancel` excludes interactive elements as a belt-and-braces.
         $('#objective-tasks').sortable({
             items: '> .objective-task-item',
             handle: '[id^=objective-task-drag-]',
+            cancel: 'input,textarea,button,select,option,[contenteditable="true"]',
             placeholder: 'ui-sortable-placeholder',
             opacity: 0.7,
             cursor: 'grabbing',
@@ -1541,15 +1546,15 @@ function initSortable() {
                 if (firstIncompleteTask) {
                     // Use setCurrentTask to properly update the current task and apply highlighting
                     setCurrentTask(firstIncompleteTask.id);
-                } else if (currentObjective.children.length > 0) {
-                    // If all tasks are completed, select the first task
-                    setCurrentTask(currentObjective.children[0].id);
+                } else {
+                    // All complete: clear current task rather than re-injecting a completed one.
+                    setCurrentTask(null);
                 }
 
                 // Save the new state
                 saveState();
             }
-        }).disableSelection();
+        });
     } else {
         console.warn("jQuery UI sortable not available. Drag-and-drop task reordering is disabled.");
         // Add a small notice at the top of the task list
@@ -1687,6 +1692,9 @@ function loadSettings() {
     // Reset Objectives and Tasks in memory
     taskTree = null;
     currentObjective = null;
+    // Reset id counter; loadTaskChildrenRecurse below will bump it back past
+    // any explicit ids it encounters via the constructor.
+    nextTaskId = 1;
 
     // Clear the objective text field when switching chats
     $('#objective-text').val('');
@@ -1791,6 +1799,9 @@ function loadSettings() {
 
     selectedCustomPrompt = chat_metadata['objective'].selectedCustomPrompt || 'default';
 
+    // Reset injection counter
+    injectionCounter = 0;
+
     // Update UI elements
     $('#objective-counter').text(checkCounter);
     $('#objective-text').text(taskTree.description);
@@ -1800,63 +1811,30 @@ function loadSettings() {
         $('#objective-parent').hide();
     }
 
-    updateUiTaskList();
-    $('#objective-chat-depth').val(chat_metadata['objective'].chatDepth);
-    $('#objective-check-frequency').val(chat_metadata['objective'].checkFrequency);
-    $('#objective-hide-tasks').prop('checked', chat_metadata['objective'].hideTasks);
-    $('#objective-tasks').prop('hidden', $('#objective-hide-tasks').prop('checked'));
+    // Apply settings to UI controls (single pass).
+    const meta = chat_metadata.objective;
+    $('#objective-chat-depth').val(meta.chatDepth);
+    $('#objective-check-frequency').val(meta.checkFrequency);
+    $('#objective-hide-tasks').prop('checked', !!meta.hideTasks);
+    $('#objective-injection-frequency').val(meta.injectionFrequency || 1);
+    $('#objective-swipes-decrement').prop('checked', !!meta.swipesDecrement);
+    $('#objective-show-completed').prop('checked', !!meta.showCompletedTasks);
+    $('#objective-completed-count').val(meta.completedTasksCount || 3);
+    $('#objective-show-upcoming').prop('checked', !!meta.showUpcomingTasks);
+    $('#objective-upcoming-count').val(meta.upcomingTasksCount || 3);
 
-    // Set recently completed tasks UI elements
-    $('#objective-show-completed').prop('checked', chat_metadata.objective.showCompletedTasks || false);
-    $('#objective-completed-count').val(chat_metadata.objective.completedTasksCount || 3);
-
-    // Set upcoming tasks UI elements
-    $('#objective-show-upcoming').prop('checked', chat_metadata.objective.showUpcomingTasks || false);
-    $('#objective-upcoming-count').val(chat_metadata.objective.upcomingTasksCount || 3);
-
-    // Update the UI with the count of recently completed tasks
-    updateCompletedTasksCount();
-
-    // Update the UI with the count of upcoming tasks
-    updateUpcomingTasksCount();
-
-    setCurrentTask(null, true);
-
-    // Set swipes decrement checkbox
-    $('#objective-swipes-decrement').prop('checked', chat_metadata.objective.swipesDecrement || false);
-
-    // Set injection frequency input
-    $('#objective-injection-frequency').val(chat_metadata.objective.injectionFrequency || 1);
-
-    // Reset injection counter
-    injectionCounter = 0;
-
-    // Set UI controls from the loaded settings
-    $('#objective-chat-depth').val(chat_metadata.objective.chatDepth);
-    $('#objective-check-frequency').val(chat_metadata.objective.checkFrequency);
-    $('#objective-hide-tasks').prop('checked', chat_metadata.objective.hideTasks);
-    $('#objective-injection-frequency').val(chat_metadata.objective.injectionFrequency);
-    $('#objective-swipes-decrement').prop('checked', chat_metadata.objective.swipesDecrement);
-
-    // Set the task show/hide state from settings
-    if (chat_metadata.objective.hideTasks) {
+    // Apply hide-tasks visibility.
+    if (meta.hideTasks) {
         $('#objective-tasks').hide();
     } else {
         $('#objective-tasks').show();
     }
 
-    // Set completed tasks settings
-    $('#objective-show-completed').prop('checked', chat_metadata.objective.showCompletedTasks);
-    $('#objective-completed-count').val(chat_metadata.objective.completedTasksCount);
-
-    // Set upcoming tasks settings
-    $('#objective-show-upcoming').prop('checked', chat_metadata.objective.showUpcomingTasks);
-    $('#objective-upcoming-count').val(chat_metadata.objective.upcomingTasksCount);
-
-    // Update the UI
     updateUiTaskList();
     updateCompletedTasksCount();
     updateUpcomingTasksCount();
+
+    setCurrentTask(null, true);
 }
 
 function addManualTaskCheckUi() {
@@ -1876,6 +1854,12 @@ function addManualTaskCheckUi() {
     $('#objective-task-complete-current-menu-item').attr('title', 'Mark the current task as completed.').on('click', markTaskCompleted);
 }
 
+// Cancellable interval helper — used by doPopout's watchdog.
+function watchdog(ms, signal, task) {
+    const intervalId = setInterval(task, ms);
+    signal.addEventListener('abort', () => clearInterval(intervalId));
+}
+
 function doPopout(e) {
     const target = e.target;
 
@@ -1886,11 +1870,12 @@ function doPopout(e) {
         const originalElement = $(target).parent().parent().parent().find('.inline-drawer-content');
         const template = $('#zoomed_avatar_template').html();
         const controlBarHtml = `<div class="panelControlBar flex-container">
-        <div id="objectiveExtensionPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
-        <div id="objectiveExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow dragClose"></div>
-    </div>`;
+            <div id="objectiveExtensionPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
+            <div id="objectiveExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow dragClose"></div>
+        </div>`;
         const newElement = $(template);
-        newElement.attr('id', 'objectiveExtensionPopout')
+        newElement
+            .attr('id', 'objectiveExtensionPopout')
             .removeClass('zoomed_avatar')
             .addClass('draggable')
             .empty();
@@ -1904,16 +1889,36 @@ function doPopout(e) {
         $('#objectiveExtensionPopout').css('display', 'flex').fadeIn(animation_duration);
         dragElement(newElement);
 
+        let popoutContents = $('#objectiveExtensionDrawerContents');
+        const controller = new AbortController();
+
+        const restoreDrawer = () => {
+            originalElement.empty();
+            originalElement.append(popoutContents);
+            $('#objectiveExtensionPopout').remove();
+        };
+
         //setup listener for close button to restore extensions menu
         $('#objectiveExtensionPopoutClose').off('click').on('click', function () {
             $('#objectiveExtensionDrawerContents').removeClass('scrollY');
-            const objectivePopoutHTML = $('#objectiveExtensionDrawerContents');
+            popoutContents = $('#objectiveExtensionDrawerContents');
             $('#objectiveExtensionPopout').fadeOut(animation_duration, () => {
-                originalElement.empty();
-                originalElement.append(objectivePopoutHTML);
-                $('#objectiveExtensionPopout').remove();
+                restoreDrawer();
+                controller.abort();
             });
             loadSettings();
+        });
+
+        // Watchdog: if the popout gets dismissed by ESC or other external
+        // means, the drawer would otherwise be stuck on "Currently popped out"
+        // forever. Detect a missing drawer-contents node and self-heal.
+        watchdog(5000, controller.signal, () => {
+            if ($('#objectiveExtensionDrawerContents').length === 0) {
+                console.debug('detected broken popout, restoring');
+                restoreDrawer();
+                loadSettings();
+                controller.abort();
+            }
         });
     } else {
         console.debug('saw existing popout, removing');
@@ -1928,7 +1933,7 @@ function onManageTemplatesClick() {
     <div class="objective_templates_modal">
         <div class="objective_prompt_block justifyCenter">
             <label for="objective-template-select">Task Templates</label>
-            <select id="objective-template-select" class="text_pole"><select>
+            <select id="objective-template-select" class="text_pole"></select>
         </div>
         <div class="objective_prompt_block justifyCenter">
             <input id="objective-template-save" class="menu_button" type="submit" value="Save Current Tasks as Template" />
@@ -2132,10 +2137,10 @@ function previewTaskTemplate() {
         return;
     }
 
-    let previewHtml = `<h4>${template.description || 'No description'}</h4><ul>`;
+    let previewHtml = `<h4>${escapeHtml(template.description) || 'No description'}</h4><ul>`;
 
     for (const task of template.tasks) {
-        previewHtml += `<li>${task.description}`;
+        previewHtml += `<li>${escapeHtml(task.description)}`;
         if (task.children && task.children.length > 0) {
             previewHtml += renderTaskChildrenPreview(task.children);
         }
@@ -2151,7 +2156,7 @@ function renderTaskChildrenPreview(children) {
     let html = '<ul>';
 
     for (const child of children) {
-        html += `<li>${child.description}`;
+        html += `<li>${escapeHtml(child.description)}`;
         if (child.children && child.children.length > 0) {
             html += renderTaskChildrenPreview(child.children);
         }
@@ -2186,23 +2191,23 @@ function populateTemplateSelect(selected) {
 
 // Add task to completion history
 function addToCompletionHistory(task) {
-    if (!chat_metadata.objective.completionHistory) {
-        chat_metadata.objective.completionHistory = [];
-    }
+    const history = chat_metadata.objective.completionHistory ??= [];
 
-    // Add to history with timestamp
-    chat_metadata.objective.completionHistory.push({
+    // Drop any prior entry for the same task so re-completing a task doesn't
+    // create duplicate history rows. A task that is unchecked and re-checked
+    // should appear once, with its latest completion timestamp.
+    const filtered = history.filter(entry => entry.id !== task.id);
+    filtered.push({
         id: task.id,
         description: task.description,
         completionDate: task.completionDate,
         objectiveDescription: currentObjective.description
     });
 
-    // Limit history size to prevent metadata from growing too large
-    if (chat_metadata.objective.completionHistory.length > 100) {
-        chat_metadata.objective.completionHistory =
-            chat_metadata.objective.completionHistory.slice(-100);
-    }
+    // Cap history size to prevent metadata bloat.
+    chat_metadata.objective.completionHistory = filtered.length > 100
+        ? filtered.slice(-100)
+        : filtered;
 
     saveMetadataDebounced();
 }
@@ -2275,13 +2280,8 @@ function showStatistics() {
         };
     }
 
-    // Count total tasks in the current tree
-    const totalTasks = countAllTasks(taskTree);
-
-    // Count completed tasks in the current tree
-    const completedTasks = countCompletedTasks(taskTree);
-
-    // Calculate completion rate
+    // Count total + completed tasks in a single tree walk.
+    const { total: totalTasks, completed: completedTasks } = countTasks(taskTree);
     const completionRate = totalTasks > 0
         ? Math.round((completedTasks / totalTasks) * 100)
         : 0;
@@ -2384,9 +2384,9 @@ function generateCompletionHistoryHtml() {
 
         html += `
         <li class="objective_history_item">
-            <div class="objective_history_task">${completion.description}</div>
-            <div class="objective_history_objective">Objective: ${completion.objectiveDescription}</div>
-            <div class="objective_history_date">${formattedDate}</div>
+            <div class="objective_history_task">${escapeHtml(completion.description)}</div>
+            <div class="objective_history_objective">Objective: ${escapeHtml(completion.objectiveDescription)}</div>
+            <div class="objective_history_date">${escapeHtml(formattedDate)}</div>
         </li>`;
     }
 
@@ -2395,37 +2395,20 @@ function generateCompletionHistoryHtml() {
 }
 
 // Count all tasks in a task tree
-function countAllTasks(task) {
-    let count = 0;
-
-    // Don't count the root task
+// Single-pass count of total + completed tasks in the tree, excluding root.
+function countTasks(task) {
+    let total = 0;
+    let completed = 0;
     if (task.parentId !== '') {
-        count = 1;
+        total = 1;
+        if (task.completed) completed = 1;
     }
-
-    // Count all children
     for (const child of task.children) {
-        count += countAllTasks(child);
+        const childCounts = countTasks(child);
+        total += childCounts.total;
+        completed += childCounts.completed;
     }
-
-    return count;
-}
-
-// Count completed tasks in a task tree
-function countCompletedTasks(task) {
-    let count = 0;
-
-    // Don't count the root task
-    if (task.parentId !== '' && task.completed) {
-        count = 1;
-    }
-
-    // Count all completed children
-    for (const child of task.children) {
-        count += countCompletedTasks(child);
-    }
-
-    return count;
+    return { total, completed };
 }
 
 // Export tasks to JSON file
@@ -2847,8 +2830,8 @@ function showRecentlyCompletedTasks() {
         const formattedDate = date.toLocaleString();
         popupText += `
                         <li class="objective_history_item">
-                            <div class="objective_history_task">${task.description}</div>
-                            <div class="objective_history_date">Completed: ${formattedDate}</div>
+                            <div class="objective_history_task">${escapeHtml(task.description)}</div>
+                            <div class="objective_history_date">Completed: ${escapeHtml(formattedDate)}</div>
                         </li>`;
     }
 
@@ -2957,12 +2940,11 @@ jQuery(async () => {
         lastMessageWasSwipe = true;
     });
     eventSource.on(event_types.MESSAGE_RECEIVED, () => {
-        if (currentChatId == undefined || jQuery.isEmptyObject(currentTask)) {
+        if (currentChatId == undefined || !currentTask) {
             return;
         }
 
-        // Store the current task ID before checking
-        const taskId = currentTask.id ? currentTask.id : null;
+        const taskId = currentTask.id ?? null;
 
         // Increment the elapsed messages counter for the current task
         incrementTaskElapsedMessages();
@@ -2984,9 +2966,13 @@ jQuery(async () => {
         const noCheckTypes = ['continue', 'quiet', 'impersonate'];
         const lastType = substituteParams('{{lastGenerationType}}');
 
-        // Check if we should decrement counter based on swipe setting
+        // Detect swipes via both the event flag AND lastGenerationType: in
+        // SillyTavern, MESSAGE_SWIPED can fire after MESSAGE_RECEIVED on
+        // swipe-right generations, so the flag alone misses some swipes
+        // (GitHub issue #1).
+        const isSwipe = lastMessageWasSwipe || lastType === 'swipe';
         const swipesDecrement = $('#objective-swipes-decrement').prop('checked');
-        const shouldDecrement = !lastMessageWasSwipe || (lastMessageWasSwipe && swipesDecrement);
+        const shouldDecrement = !isSwipe || swipesDecrement;
 
         if (Number($('#objective-check-frequency').val()) > 0 && !noCheckTypes.includes(lastType) && shouldDecrement) {
             // Check only at specified interval. Don't let counter go negative
@@ -3202,7 +3188,7 @@ function showUpcomingTasks() {
     for (const task of upcomingTasks) {
         popupText += `
                         <li class="objective_history_item">
-                            <div class="objective_history_task">${task.description}</div>
+                            <div class="objective_history_task">${escapeHtml(task.description)}</div>
                         </li>`;
     }
 
