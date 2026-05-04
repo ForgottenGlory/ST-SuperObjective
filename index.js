@@ -99,12 +99,13 @@ jQuery(async () => {
     $(document).on('click',   '#objective_statistics',        showStatistics);
     $(document).on('click', '#objective-open-workspace', () => openWorkspace());
 
-    // Top-level "Add" button in the upcoming-tasks panel header.
+    // Top-level "Add" button in the upcoming-tasks panel header. Doesn't
+    // take focus away from the existing current task — adding tasks is a
+    // queueing action, not "switch to this now."
     $(document).on('click', '#objective-task-add-toplevel', () => {
         if (!state.currentObjective) return;
-        const newTask = state.currentObjective.addTask('New Task');
+        state.currentObjective.addTask('New Task');
         updateUiTaskList();
-        setCurrentTask(newTask.id);
     });
 
     // "Add" button in the subtasks panel — adds a child under the selected
