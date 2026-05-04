@@ -55,6 +55,7 @@ import {
     setCurrentTask,
     updateUiTaskList,
 } from './lib/ui-tasklist.js';
+import { doPopout } from './lib/ui-popout.js';
 
 const MODULE_NAME = 'SuperObjective';
 
@@ -790,72 +791,6 @@ function addManualTaskCheckUi() {
         </div>`);
     $('#objective-task-manual-check-menu-item').attr('title', 'Trigger AI check of completed tasks').on('click', checkTaskCompleted);
     $('#objective-task-complete-current-menu-item').attr('title', 'Mark the current task as completed.').on('click', markTaskCompleted);
-}
-
-function doPopout(e) {
-    const target = e.target;
-
-    //repurposes the zoomed avatar template to server as a floating div
-    if ($('#objectiveExtensionPopout').length === 0) {
-        console.debug('did not see popout yet, creating');
-        const originalHTMLClone = $(target).parent().parent().parent().find('.inline-drawer-content').html();
-        const originalElement = $(target).parent().parent().parent().find('.inline-drawer-content');
-        const template = $('#zoomed_avatar_template').html();
-        const controlBarHtml = `<div class="panelControlBar flex-container">
-            <div id="objectiveExtensionPopoutheader" class="fa-solid fa-grip drag-grabber hoverglow"></div>
-            <div id="objectiveExtensionPopoutClose" class="fa-solid fa-circle-xmark hoverglow dragClose"></div>
-        </div>`;
-        const newElement = $(template);
-        newElement
-            .attr('id', 'objectiveExtensionPopout')
-            .removeClass('zoomed_avatar')
-            .addClass('draggable')
-            .empty();
-        originalElement.html('<div class="flex-container alignitemscenter justifyCenter wide100p"><small>Currently popped out</small></div>');
-        newElement.append(controlBarHtml).append(originalHTMLClone);
-        $('#movingDivs').append(newElement);
-        $('#objectiveExtensionDrawerContents').addClass('scrollY');
-        loadSettings();
-        loadMovingUIState();
-
-        $('#objectiveExtensionPopout').css('display', 'flex').fadeIn(animation_duration);
-        dragElement(newElement);
-
-        let popoutContents = $('#objectiveExtensionDrawerContents');
-        const controller = new AbortController();
-
-        const restoreDrawer = () => {
-            originalElement.empty();
-            originalElement.append(popoutContents);
-            $('#objectiveExtensionPopout').remove();
-        };
-
-        //setup listener for close button to restore extensions menu
-        $('#objectiveExtensionPopoutClose').off('click').on('click', function () {
-            $('#objectiveExtensionDrawerContents').removeClass('scrollY');
-            popoutContents = $('#objectiveExtensionDrawerContents');
-            $('#objectiveExtensionPopout').fadeOut(animation_duration, () => {
-                restoreDrawer();
-                controller.abort();
-            });
-            loadSettings();
-        });
-
-        // Watchdog: if the popout gets dismissed by ESC or other external
-        // means, the drawer would otherwise be stuck on "Currently popped out"
-        // forever. Detect a missing drawer-contents node and self-heal.
-        watchdog(5000, controller.signal, () => {
-            if ($('#objectiveExtensionDrawerContents').length === 0) {
-                console.debug('detected broken popout, restoring');
-                restoreDrawer();
-                loadSettings();
-                controller.abort();
-            }
-        });
-    } else {
-        console.debug('saw existing popout, removing');
-        $('#objectiveExtensionPopout').fadeOut(animation_duration, () => { $('#objectiveExtensionPopoutClose').trigger('click'); });
-    }
 }
 
 // Add template management UI
