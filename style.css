@@ -292,8 +292,8 @@
 
 .objective-workspace-panel {
     position: relative;
-    display: grid;
-    grid-template-rows: auto 1fr;
+    display: flex;
+    flex-direction: column;
     width: min(96vw, 1600px);
     height: min(85vh, 85dvh);
     margin: auto;
@@ -304,6 +304,7 @@
     border: 1px solid var(--SmartThemeBorderColor, #444);
     border-radius: 8px;
 }
+
 
 /* ---- Header row ---- */
 .objective-workspace-header {
@@ -393,8 +394,9 @@
     justify-content: center;
 }
 
-/* ---- Body row: three columns ---- */
+/* ---- Body row: three columns. flex: 1 fills the panel's flex column. ---- */
 .objective-workspace-body {
+    flex: 1;
     display: grid;
     grid-template-columns: 1fr 1.2fr 1.4fr;
     gap: 10px;
