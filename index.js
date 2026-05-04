@@ -16,6 +16,7 @@ import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.j
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { escapeHtml, watchdog } from './lib/utils.js';
 import { state, defaultPrompts, defaultSettings } from './lib/state.js';
+import { substituteParamsPrompts } from './lib/prompts.js';
 
 const MODULE_NAME = 'SuperObjective';
 
@@ -45,67 +46,6 @@ function getTaskByIdRecurse(taskId, task) {
         }
     }
     return null;
-}
-
-function substituteParamsPrompts(content, substituteGlobal) {
-    if (!content) {
-        return '';
-    }
-
-    // Clone the content so we don't modify the original
-    let result = content;
-
-    // Always replace objective regardless of other settings
-    result = result.replace(/{{objective}}/gi, state.currentObjective?.description ?? '');
-
-    // Always replace {{task}} and {{currentTask}} (treated as aliases). Older
-    // versions only substituted {{task}} when substituteGlobal=true, which
-    // silently broke checkTaskCompleted (the LLM saw the literal string).
-    const taskDesc = state.currentTask?.description ?? '';
-    result = result.replace(/{{task}}/gi, taskDesc);
-    result = result.replace(/{{currentTask}}/gi, taskDesc);
-
-    // Replace global params regardless of injection frequency
-    if (substituteGlobal) {
-        result = result.replace(/{{parent}}/gi, state.currentTask?.parent?.description ?? '');
-    }
-
-    // Replace task-specific params
-    if (state.currentTask && state.currentTask.id) {
-
-        // Handle completed tasks if needed
-        if (result.includes('{{completedTasks}}')) {
-            if (state.recentlyCompletedTasks.length > 0) {
-                const completedTasksText = state.recentlyCompletedTasks
-                    .map(task => `[${task.description}]`)
-                    .join(', ');
-                result = result.replace(/{{completedTasks}}/gi, completedTasksText);
-            } else {
-                // Replace with a message indicating no completed tasks
-                result = result.replace(/{{completedTasks}}/gi, "No tasks completed yet");
-            }
-        }
-
-        // Handle upcoming tasks if needed
-        if (result.includes('{{upcomingTasks}}')) {
-            if (state.upcomingTasks.length > 0) {
-                const upcomingTasksText = state.upcomingTasks
-                    .map(task => `[${task.description}]`)
-                    .join(', ');
-                result = result.replace(/{{upcomingTasks}}/gi, upcomingTasksText);
-            } else {
-                // Replace with a message indicating no upcoming tasks
-                result = result.replace(/{{upcomingTasks}}/gi, "No upcoming tasks yet");
-            }
-        }
-    } else {
-        // If there's no current task, remove the remaining task-list placeholders
-        // ({{task}}/{{currentTask}} were already substituted above, possibly with '').
-        result = result.replace(/{{completedTasks}}/g, '');
-        result = result.replace(/{{upcomingTasks}}/g, '');
-    }
-
-    return result;
 }
 
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
