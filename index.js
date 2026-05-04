@@ -17,36 +17,19 @@ import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
 import { escapeHtml, watchdog } from './lib/utils.js';
 import { state, defaultPrompts, defaultSettings } from './lib/state.js';
 import { substituteParamsPrompts } from './lib/prompts.js';
+import {
+    ObjectiveTask,
+    getTaskById,
+    getTaskByIdRecurse,
+    getNextIncompleteTaskRecurse,
+    incrementTaskElapsedMessages,
+} from './lib/task.js';
 
 const MODULE_NAME = 'SuperObjective';
 
 //###############################//
 //#       Task Management       #//
 //###############################//
-
-// Return the task and index or throw an error
-function getTaskById(taskId) {
-    if (taskId == null) {
-        throw 'Null task id';
-    }
-    return getTaskByIdRecurse(taskId, state.taskTree);
-}
-
-function getTaskByIdRecurse(taskId, task) {
-    if (!task) {
-        return null;
-    }
-    if (task.id == taskId) {
-        return task;
-    }
-    for (const childTask of task.children) {
-        const foundTask = getTaskByIdRecurse(taskId, childTask);
-        if (foundTask != null) {
-            return foundTask;
-        }
-    }
-    return null;
-}
 
 // Call Quiet Generate to create task list using character context, then convert to tasks. Should not be called much.
 async function generateTasks() {
@@ -277,59 +260,8 @@ async function checkTaskCompleted() {
     return String(false);
 }
 
-function getNextIncompleteTaskRecurse(task) {
-    // First check direct children to prioritize tasks at the top level
-    if (task.children && task.children.length > 0) {
-        for (const childTask of task.children) {
-            // Return the first incomplete task at this level
-            if (childTask.completed === false && childTask.children.length === 0) {
-                return childTask;
-            }
-        }
-
-        // If no direct incomplete children, then recurse into each child
-        for (const childTask of task.children) {
-            if (childTask.completed === true) { // Don't recurse into completed tasks
-                continue;
-            }
-            const foundTask = getNextIncompleteTaskRecurse(childTask);
-            if (foundTask != null) {
-                return foundTask;
-            }
-        }
-    }
-
-    // If this is a leaf task and it's incomplete, return it
-    if (task.completed === false
-        && task.children.length === 0
-        && task.parentId !== '') {
-        return task;
-    }
-
-    return null;
-}
-
-// Increment elapsed messages count for the current task
-function incrementTaskElapsedMessages() {
-    if (!state.currentTask || state.currentTask.completed) {
-        return;
-    }
-
-    // Increment the elapsed messages counter for the current task
-    state.currentTask.elapsedMessages += 1;
-    console.debug(`Incremented elapsed messages for task ${state.currentTask.id} to ${state.currentTask.elapsedMessages}`);
-
-    // Update the duration button color if the task has now met its duration
-    if (state.currentTask.duration > 0 && state.currentTask.elapsedMessages >= state.currentTask.duration) {
-        state.currentTask.durationButton.css({ 'color': '#33cc33' }); // Change to green when duration is met
-    }
-
-    // Save the state to persist the counter
-    saveState();
-}
-
 // Set a task in extensionPrompt context. Defaults to first incomplete
-function setCurrentTask(taskId = null, skipSave = false) {
+export function setCurrentTask(taskId = null, skipSave = false) {
     const context = getContext();
 
     // Store the previous current task ID
@@ -427,406 +359,6 @@ function setCurrentTask(taskId = null, skipSave = false) {
 
     if (!skipSave) {
         saveState();
-    }
-}
-
-//###############################//
-//#         Task Class          #//
-//###############################//
-class ObjectiveTask {
-    id;
-    description;
-    completed;
-    parentId;
-    children;
-    completionDate;
-    duration; // Task duration (minimum messages before auto-completion)
-    elapsedMessages; // Track elapsed messages since the task became current
-
-    taskHtml;
-    descriptionSpan;
-    completedCheckbox;
-    deleteTaskButton;
-    addTaskButton;
-    branchButton;
-    dragHandle;
-    durationButton; // UI element for duration settings
-
-    constructor({ id = undefined, description, completed = false, parentId = '', completionDate = null, duration = 0, elapsedMessages = 0 }) {
-        if (id === undefined) {
-            this.id = state.nextTaskId++;
-        } else {
-            this.id = id;
-            if (typeof id === 'number' && id >= state.nextTaskId) {
-                state.nextTaskId = id + 1;
-            }
-        }
-        this.description = description;
-        this.completed = completed;
-        this.parentId = parentId;
-        this.children = [];
-        this.completionDate = completionDate;
-        this.duration = duration; // Initialize duration property
-        this.elapsedMessages = elapsedMessages; // Initialize elapsed messages counter
-    }
-
-    // Accepts optional index. Defaults to adding to end of list.
-    addTask(description, index = null) {
-        index = index != null ? index : index = this.children.length;
-        const newTask = new ObjectiveTask(
-            { description: description, parentId: this.id }
-        );
-        this.children.splice(index, 0, newTask);
-
-        // Update statistics - both chat-specific and global
-        if (chat_metadata.objective.statistics) {
-            chat_metadata.objective.statistics.tasksCreated++;
-        }
-
-        // Update global statistics
-        if (extension_settings.objective.globalStatistics) {
-            extension_settings.objective.globalStatistics.tasksCreated++;
-            saveSettingsDebounced();
-        }
-
-        saveState();
-        return newTask;
-    }
-
-    getIndex() {
-        if (this.parentId !== null) {
-            const parent = getTaskById(this.parentId);
-            const index = parent.children.findIndex(task => task.id === this.id);
-            if (index === -1) {
-                throw `getIndex failed: Task '${this.description}' not found in parent task '${parent.description}'`;
-            }
-            return index;
-        } else {
-            throw `getIndex failed: Task '${this.description}' has no parent`;
-        }
-    }
-
-    // Used to set parent to complete when all child tasks are completed.
-    // Walks up the chain so that a grandparent auto-completes when its
-    // entire subtree is done.
-    checkParentComplete() {
-        if (this.parentId === '') {
-            return;
-        }
-        const parent = getTaskById(this.parentId);
-        if (!parent) return;
-
-        const allChildrenComplete = parent.children.every(child => child.completed);
-        const wasCompleted = parent.completed;
-        parent.completed = allChildrenComplete;
-
-        if (allChildrenComplete && !wasCompleted) {
-            console.info(`Parent task '${parent.description}' completed after all child tasks completed.`);
-        }
-
-        if (parent.completed !== wasCompleted) {
-            updateUiTaskList();
-            // Recurse upward so grandparents (etc.) get updated too.
-            parent.checkParentComplete();
-        }
-    }
-
-    // Run the post-completion side-effects (history, stats, parent cascade,
-    // pick a next task, redraw). Pulled out so onCompleteClick can reuse it
-    // after performing its own cascade-to-children, without re-tripping
-    // completeTask's "already completed" guard.
-    _runCompletionSideEffects() {
-        console.info(`Task successfully completed: ${JSON.stringify(this.description)}`);
-        addToCompletionHistory(this);
-        addToRecentlyCompletedTasks(this);
-        updateStatistics(true);
-        this.checkParentComplete();
-
-        const nextTask = getNextIncompleteTaskRecurse(state.taskTree);
-        setCurrentTask(nextTask ? nextTask.id : this.id);
-        updateUiTaskList();
-    }
-
-    // Complete this task, setting next task to next incomplete task.
-    completeTask() {
-        if (this.completed) {
-            return;
-        }
-        this.completed = true;
-        this.completionDate = new Date().toISOString();
-        this.elapsedMessages = 0;
-        this._runCompletionSideEffects();
-    }
-
-    // Add a single task to the UI and attach event listeners for user edits
-    addUiElement() {
-        // Use template string, assign ids to elements for later reference
-        const template = `
-        <div id="objective-task-item-${this.id}" class="objective-task-item">
-            <div id="objective-task-label-${this.id}" class="flex1 checkbox_label alignItemsCenter">
-                <div id="objective-task-drag-${this.id}" class="objective-task-button fa-solid fa-grip-vertical fa-fw fa-lg" title="Drag to reorder"></div>
-                <input id="objective-task-complete-${this.id}" type="checkbox" ${this.completed ? 'checked' : ''}>
-                <span id="objective-task-description-${this.id}" class="text_pole objective-task" contenteditable="true">${escapeHtml(this.description)}</span>
-                <div id="objective-task-delete-${this.id}" class="objective-task-button fa-solid fa-xmark fa-fw fa-lg" title="Delete Task"></div>
-                <div id="objective-task-add-${this.id}" class="objective-task-button fa-solid fa-plus fa-fw fa-lg" title="Add Task"></div>
-                <div id="objective-task-add-branch-${this.id}" class="objective-task-button fa-solid fa-code-fork fa-fw fa-lg" title="Branch Task"></div>
-                <div id="objective-task-duration-${this.id}" class="objective-task-button fa-solid fa-clock fa-fw fa-lg" title="Task Duration Settings"></div>
-            </div>
-        </div>
-        `;
-
-        // Add the filled out template
-        $('#objective-tasks').append(template);
-
-        this.completedCheckbox = $(`#objective-task-complete-${this.id}`);
-        this.descriptionSpan = $(`#objective-task-description-${this.id}`);
-        this.addButton = $(`#objective-task-add-${this.id}`);
-        this.deleteButton = $(`#objective-task-delete-${this.id}`);
-        this.taskHtml = $(`#objective-task-label-${this.id}`);
-        this.branchButton = $(`#objective-task-add-branch-${this.id}`);
-        this.dragHandle = $(`#objective-task-drag-${this.id}`);
-        this.durationButton = $(`#objective-task-duration-${this.id}`);
-
-        // Handle sub-task forking style
-        if (this.children.length > 0) {
-            this.branchButton.css({ 'color': '#33cc33' });
-        } else {
-            this.branchButton.css({ 'color': '' });
-        }
-
-        // Style duration button based on duration settings and progress
-        if (this.duration > 0) {
-            if (this.elapsedMessages >= this.duration) {
-                // Green if duration requirement met
-                this.durationButton.css({ 'color': '#33cc33' });
-            } else {
-                // Yellow if duration set but not yet met
-                this.durationButton.css({ 'color': '#ffcc00' });
-            }
-        } else {
-            // Default color if no duration set
-            this.durationButton.css({ 'color': '' });
-        }
-
-        // Add event listeners and set properties
-        $(`#objective-task-complete-${this.id}`).prop('checked', this.completed);
-        $(`#objective-task-complete-${this.id}`).on('click', () => (this.onCompleteClick()));
-        $(`#objective-task-description-${this.id}`).on('input', () => (this.onDescriptionUpdate()));
-        $(`#objective-task-description-${this.id}`).on('focusout', () => (this.onDescriptionFocusout()));
-        $(`#objective-task-delete-${this.id}`).on('click', () => (this.onDeleteClick()));
-        $(`#objective-task-add-${this.id}`).on('click', () => (this.onAddClick()));
-        this.branchButton.on('click', () => (this.onBranchClick()));
-        this.durationButton.on('click', () => (this.onDurationClick()));
-
-        // If this is the current task, highlight it
-        if (state.currentTask && state.currentTask.id === this.id) {
-            this.descriptionSpan.addClass('objective-task-highlight');
-        }
-    }
-
-    onBranchClick() {
-        state.currentObjective = this;
-        updateUiTaskList();
-
-        // Find the first incomplete task in this branch
-        const nextTask = getNextIncompleteTaskRecurse(this);
-        if (nextTask) {
-            setCurrentTask(nextTask.id);
-        } else {
-            // If no incomplete tasks in this branch, highlight the branch itself
-            setCurrentTask(this.id);
-        }
-    }
-
-    complete(completed) {
-        this.completed = completed;
-
-        // If marking as completed, set completion date if it doesn't exist
-        if (completed && !this.completionDate) {
-            this.completionDate = new Date().toISOString();
-        }
-
-        // Apply to all children recursively
-        this.children.forEach(child => child.complete(completed));
-    }
-    onCompleteClick() {
-        const wasCompleted = this.completed;
-        const isNowChecked = this.completedCheckbox.prop('checked');
-
-        // Cascade the new state to descendants — checking a parent marks all
-        // sub-tasks done, unchecking marks them undone.
-        this.complete(isNowChecked);
-        this.elapsedMessages = 0;
-
-        if (!wasCompleted && isNowChecked) {
-            this._runCompletionSideEffects();
-            return;
-        }
-
-        if (wasCompleted && !isNowChecked) {
-            state.recentlyCompletedTasks = state.recentlyCompletedTasks.filter(task => task.id !== this.id);
-            updateCompletedTasksCount();
-        }
-
-        // For uncheck and unchanged paths: refresh highlight and tree state.
-        setCurrentTask(this.id);
-        this.checkParentComplete();
-        updateUiTaskList();
-    }
-
-    onDescriptionUpdate() {
-        this.description = this.descriptionSpan.text();
-    }
-
-    onDescriptionFocusout() {
-        this.description = this.descriptionSpan.text();
-        saveState();
-    }
-
-    onDeleteClick() {
-        const parent = getTaskById(this.parentId);
-        const taskIndex = parent.children.findIndex(task => task.id === this.id);
-
-        if (taskIndex === -1) {
-            console.error(`Failed to find task index for deletion: ${this.id}`);
-            return;
-        }
-
-        // Check if this task has children
-        if (this.children.length > 0) {
-            // Ask for confirmation when deleting a task with children
-            const confirmMessage = "This task has sub-tasks that will also be deleted. Are you sure?";
-            if (!confirm(confirmMessage)) {
-                return;
-            }
-        }
-
-        // Remove this task from its parent's children array
-        parent.children.splice(taskIndex, 1);
-
-        // If this is the current task, find a new current task
-        if (state.currentTask && state.currentTask.id === this.id) {
-            // Look for the next incomplete task
-            setCurrentTask();
-        }
-
-        // Update the UI
-        updateUiTaskList();
-        updateUpcomingTasks();
-
-        // Save the updated state
-        saveState();
-    }
-
-    onAddClick() {
-        const addAtIndex = this.getIndex() + 1;
-        state.currentObjective.addTask('New Task', addAtIndex);
-        updateUiTaskList();
-        saveState();
-    }
-
-    onDurationClick() {
-        // Store task reference for use in event handlers
-        const task = this;
-
-        // Create the popup HTML
-        const popupContent = `
-        <div class="objective_duration_modal">
-            <h4>Task Duration Settings</h4>
-            <div class="objective_block objective_block_control marginBottom10">
-                <label for="task-duration-value-${this.id}">Minimum messages before auto-completion:</label>
-                <input id="task-duration-value-${this.id}" type="number" min="0" max="50" value="${this.duration}" class="text_pole widthUnset">
-                <small>(0 = no delay)</small>
-            </div>
-            ${this.duration > 0 ? `
-            <div class="objective_block marginBottom10" id="task-duration-progress-${this.id}">
-                <strong>Current progress:</strong> ${this.elapsedMessages}/${this.duration} messages
-                ${this.elapsedMessages >= this.duration ? '<span class="task-duration-progress-complete"> (Complete)</span>' : ''}
-            </div>
-            ` : ''}
-            ${this.duration > 0 ? `
-            <div class="objective_block flex-container flexWrap">
-                <input id="task-duration-reset-${this.id}" class="menu_button" type="button" value="Reset Progress">
-            </div>
-            ` : ''}
-        </div>
-        `;
-
-        // Function to save the duration value
-        const saveDuration = function () {
-            // Get the duration value from the input
-            const duration = parseInt($(`#task-duration-value-${task.id}`).val());
-
-            // Update the task duration
-            task.duration = isNaN(duration) ? 0 : duration;
-
-            // Reset the elapsed messages if duration is changed to 0
-            if (task.duration === 0) {
-                task.elapsedMessages = 0;
-            }
-
-            // Update the duration button style
-            if (task.duration > 0) {
-                if (task.elapsedMessages >= task.duration) {
-                    task.durationButton.css({ 'color': '#33cc33' }); // Green if duration requirement met
-                } else {
-                    task.durationButton.css({ 'color': '#ffcc00' }); // Yellow if duration set but not yet met
-                }
-            } else {
-                task.durationButton.css({ 'color': '' }); // Default color if no duration
-            }
-
-            // Save the state
-            saveState();
-        };
-
-        // Show the popup and register the callback for when OK is clicked
-        callGenericPopup(popupContent, POPUP_TYPE.TEXT, 'Task Duration Settings', {
-            allowVerticalScrolling: true,
-            okButton: 'Save',
-            onClose: saveDuration
-        });
-
-        // Add event listener for reset button if it exists
-        if (this.duration > 0) {
-            $(`#task-duration-reset-${this.id}`).on('click', function () {
-                // Reset the elapsed messages counter
-                task.elapsedMessages = 0;
-
-                // Update the button color
-                task.durationButton.css({ 'color': '#ffcc00' });
-
-                // Update the progress display in the popup
-                const progressHtml = `
-                <strong>Current progress:</strong> 0/${task.duration} messages
-                `;
-                $(`#task-duration-progress-${task.id}`).html(progressHtml);
-
-                // Save the state
-                saveState();
-            });
-        }
-    }
-
-    toSaveStateRecurse() {
-        const saveState = {
-            id: this.id,
-            description: this.description,
-            completed: this.completed,
-            parentId: this.parentId,
-            completionDate: this.completionDate,
-            duration: this.duration,
-            elapsedMessages: this.elapsedMessages,
-            children: []
-        };
-
-        if (this.children.length > 0) {
-            for (const child of this.children) {
-                saveState.children.push(child.toSaveStateRecurse());
-            }
-        }
-
-        return saveState;
     }
 }
 
@@ -1257,7 +789,7 @@ function resetState() {
 }
 
 //
-function saveState() {
+export function saveState() {
     const context = getContext();
 
     if (state.currentChatId == '') {
@@ -1303,7 +835,7 @@ globalThis.debugObjectiveExtension = debugObjectiveExtension;
 
 
 // Populate UI task list
-function updateUiTaskList() {
+export function updateUiTaskList() {
     // Clear existing task list
     $('#objective-tasks').empty();
 
@@ -2054,7 +1586,7 @@ function populateTemplateSelect(selected) {
 }
 
 // Add task to completion history
-function addToCompletionHistory(task) {
+export function addToCompletionHistory(task) {
     const history = chat_metadata.objective.completionHistory ??= [];
 
     // Drop any prior entry for the same task so re-completing a task doesn't
@@ -2077,7 +1609,7 @@ function addToCompletionHistory(task) {
 }
 
 // Update task statistics
-function updateStatistics(taskCompleted = false) {
+export function updateStatistics(taskCompleted = false) {
     // Initialize chat-specific statistics if they don't exist
     if (!chat_metadata.objective.statistics) {
         chat_metadata.objective.statistics = {
@@ -2600,7 +2132,7 @@ async function importTaskTemplates() {
 }
 
 // Add task to recently completed tasks array
-function addToRecentlyCompletedTasks(task) {
+export function addToRecentlyCompletedTasks(task) {
     // First, remove any existing entry for this task to avoid duplicates
     state.recentlyCompletedTasks = state.recentlyCompletedTasks.filter(t => t.id !== task.id);
 
@@ -2895,7 +2427,7 @@ jQuery(async () => {
 });
 
 // Update the UI to show how many recently completed tasks are being tracked
-function updateCompletedTasksCount() {
+export function updateCompletedTasksCount() {
     const count = state.recentlyCompletedTasks.length;
     const viewButton = $('#objective-view-completed');
 
@@ -2907,7 +2439,7 @@ function updateCompletedTasksCount() {
 }
 
 // Update upcoming tasks based on the current task
-function updateUpcomingTasks() {
+export function updateUpcomingTasks() {
     // Clear the current upcoming tasks
     state.upcomingTasks = [];
 
