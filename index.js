@@ -32,7 +32,6 @@ import {
 import {
     onShowUpcomingTasksInput,
     onUpcomingTasksCountInput,
-    onPurgeUpcomingTasksClick,
     showUpcomingTasks,
 } from './lib/upcoming-tasks.js';
 import { setCurrentTask, updateUiTaskList } from './lib/ui-tasklist.js';
@@ -87,7 +86,6 @@ jQuery(async () => {
     $(document).on('click',   '#objective-view-completed',    showRecentlyCompletedTasks);
     $(document).on('click',   '#objective-show-upcoming',     onShowUpcomingTasksInput);
     $(document).on('input',   '#objective-upcoming-count',    onUpcomingTasksCountInput);
-    $(document).on('click',   '#objective-purge-upcoming',    onPurgeUpcomingTasksClick);
     $(document).on('click',   '#objective-view-upcoming',     showUpcomingTasks);
     $(document).on('click',   '#objective-swipes-decrement',  onSwipesDecrementInput);
     $(document).on('input',   '#objective-injection-frequency', onInjectionFrequencyInput);
