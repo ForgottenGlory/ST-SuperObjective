@@ -35,14 +35,13 @@ import {
     showUpcomingTasks,
 } from './lib/upcoming-tasks.js';
 import { setCurrentTask, updateUiTaskList } from './lib/ui-tasklist.js';
-import { mountWorkspace, openWorkspace } from './lib/ui-workspace.js';
+import { mountWorkspace, openWorkspace, getSelectedTask, setSelectedTask } from './lib/ui-workspace.js';
 import { checkTaskCompleted } from './lib/generation.js';
 import { onEditPromptClick } from './lib/prompts-modal.js';
 import { onManageTemplatesClick } from './lib/templates-modal.js';
 import { exportTasks, importTasks } from './lib/import-export.js';
 import {
     addManualTaskCheckUi,
-    onParentClick,
     onGenerateObjectiveClick,
     onGenerateAdditionalTasksClick,
     onChatDepthInput,
@@ -83,7 +82,6 @@ jQuery(async () => {
     $(document).on('click',   '#objective-hide-tasks',        onHideTasksInput);
     $(document).on('click',   '#objective-clear',             onClearTasksClick);
     $(document).on('click',   '#objective_prompt_edit',       onEditPromptClick);
-    $(document).on('click',   '#objective-parent',            onParentClick);
     $(document).on('focusout','#objective-text',              onObjectiveTextFocusOut);
     $(document).on('click',   '#objective-show-completed',    onShowCompletedTasksInput);
     $(document).on('input',   '#objective-completed-count',   onCompletedTasksCountInput);
@@ -109,8 +107,15 @@ jQuery(async () => {
         setCurrentTask(newTask.id);
     });
 
-    // Parent-up button is hidden until we descend into a branch.
-    $('#objective-parent').hide();
+    // "Add" button in the subtasks panel — adds a child under the selected
+    // task. This replaces the per-row fork/branch icon: instead of drilling
+    // into a task to add to it, you select it and add from the right column.
+    $(document).on('click', '#objective-add-subtask', () => {
+        const selected = getSelectedTask();
+        if (!selected) return;
+        selected.addTask('New Subtask');
+        setSelectedTask(selected.id);
+    });
 
     loadSettings();
 

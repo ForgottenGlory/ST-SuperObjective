@@ -2,6 +2,10 @@
     <div class="objective-workspace-backdrop"></div>
     <div class="objective-workspace-panel">
 
+        <button id="objective-workspace-close" class="menu_button objective-workspace-close-btn" type="button" title="Close">
+            <i class="fa-solid fa-xmark"></i>
+        </button>
+
         <!-- ============ Header row ============ -->
         <div class="objective-workspace-header">
             <div class="objective-workspace-brand">
@@ -25,24 +29,27 @@
             <div class="objective-workspace-actions">
                 <button id="objective-workspace-settings-btn" class="menu_button" type="button" title="Settings">
                     <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
                 </button>
                 <button id="objective_prompt_edit" class="menu_button" type="button" title="Manage Prompts">
                     <i class="fa-solid fa-pen-to-square"></i>
+                    <span>Prompts</span>
                 </button>
                 <button id="objective_templates" class="menu_button" type="button" title="Manage Templates">
                     <i class="fa-solid fa-layer-group"></i>
+                    <span>Templates</span>
                 </button>
                 <button id="objective_statistics" class="menu_button" type="button" title="Statistics">
                     <i class="fa-solid fa-chart-simple"></i>
+                    <span>Stats</span>
                 </button>
                 <button id="objective_export" class="menu_button" type="button" title="Export Tasks">
                     <i class="fa-solid fa-download"></i>
+                    <span>Export</span>
                 </button>
                 <button id="objective_import" class="menu_button" type="button" title="Import Tasks">
                     <i class="fa-solid fa-upload"></i>
-                </button>
-                <button id="objective-workspace-close" class="menu_button" type="button" title="Close">
-                    <i class="fa-solid fa-xmark"></i>
+                    <span>Import</span>
                 </button>
             </div>
         </div>
@@ -76,9 +83,6 @@
                 <header class="objective-workspace-col-header">
                     <h3>Upcoming Tasks</h3>
                     <div class="objective-workspace-col-header-actions">
-                        <button id="objective-parent" class="menu_button" type="button" title="Go to parent task" style="display: none;">
-                            <i class="fa-solid fa-circle-left"></i>
-                        </button>
                         <input id="objective-generate" class="menu_button" type="button" value="Generate" title="Auto-Generate Tasks">
                         <input id="objective-generate-more" class="menu_button" type="button" value="More" title="Generate More Tasks" style="display: none;">
                         <button id="objective-task-add-toplevel" class="menu_button" type="button" title="Add Task">
@@ -123,7 +127,12 @@
                         <div id="objective-workspace-current-subtask-text">—</div>
                     </div>
                 </header>
-                <h3 class="objective-workspace-subtasks-title">Subtasks</h3>
+                <div class="objective-workspace-subtasks-title-row">
+                    <h3 class="objective-workspace-subtasks-title">Subtasks</h3>
+                    <button id="objective-add-subtask" class="menu_button" type="button" title="Add subtask under selected task" disabled>
+                        <i class="fa-solid fa-plus"></i> Add
+                    </button>
+                </div>
                 <div class="objective-workspace-subtasks-cols">
                     <div class="objective-workspace-subtasks-col">
                         <h4>Completed</h4>
