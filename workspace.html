@@ -1,0 +1,196 @@
+<div id="objective-workspace" class="objective-workspace" style="display: none;">
+    <div class="objective-workspace-backdrop"></div>
+    <div class="objective-workspace-panel">
+
+        <!-- ============ Header row ============ -->
+        <div class="objective-workspace-header">
+            <div class="objective-workspace-brand">
+                <div class="objective-workspace-title">SuperObjective</div>
+                <div id="objective-progress-container" class="objective-workspace-progress">
+                    <div class="objective-workspace-progress-label">No tasks yet</div>
+                    <div class="progress-bar-container">
+                        <div id="objective-progress-bar" class="progress-bar" style="width: 0%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="objective-workspace-currenttask">
+                <small>Current Task</small>
+                <div id="objective-workspace-current-task-text">—</div>
+                <div class="objective-workspace-currenttask-meta">
+                    Messages until next check: <span id="objective-counter">0</span>
+                </div>
+            </div>
+
+            <div class="objective-workspace-actions">
+                <button id="objective-workspace-settings-btn" class="menu_button" type="button" title="Settings">
+                    <i class="fa-solid fa-gear"></i>
+                </button>
+                <button id="objective_prompt_edit" class="menu_button" type="button" title="Manage Prompts">
+                    <i class="fa-solid fa-pen-to-square"></i>
+                </button>
+                <button id="objective_templates" class="menu_button" type="button" title="Manage Templates">
+                    <i class="fa-solid fa-layer-group"></i>
+                </button>
+                <button id="objective_statistics" class="menu_button" type="button" title="Statistics">
+                    <i class="fa-solid fa-chart-simple"></i>
+                </button>
+                <button id="objective_export" class="menu_button" type="button" title="Export Tasks">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <button id="objective_import" class="menu_button" type="button" title="Import Tasks">
+                    <i class="fa-solid fa-upload"></i>
+                </button>
+                <button id="objective-workspace-close" class="menu_button" type="button" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- ============ Body row ============ -->
+        <div class="objective-workspace-body">
+
+            <!-- ----- Completed Tasks column ----- -->
+            <section class="objective-workspace-col objective-workspace-completed">
+                <header class="objective-workspace-col-header">
+                    <h3>Completed Tasks</h3>
+                </header>
+                <div id="objective-recently-completed-list" class="objective-workspace-list"></div>
+                <footer class="objective-workspace-col-footer">
+                    <label class="checkbox_label">
+                        <input id="objective-show-completed" type="checkbox">
+                        <span>Include in prompt</span>
+                    </label>
+                    <div class="objective_block_control flex-container alignitemscenter">
+                        <label for="objective-completed-count">Count:</label>
+                        <input id="objective-completed-count" class="text_pole widthUnset" type="number" min="1" max="10" value="3">
+                    </div>
+                    <div class="objective-workspace-footer-buttons">
+                        <input id="objective-view-completed" class="menu_button" type="button" value="View All">
+                    </div>
+                </footer>
+            </section>
+
+            <!-- ----- Upcoming Tasks column (the editable task tree) ----- -->
+            <section class="objective-workspace-col objective-workspace-upcoming">
+                <header class="objective-workspace-col-header">
+                    <h3>Upcoming Tasks</h3>
+                    <div class="objective-workspace-col-header-actions">
+                        <button id="objective-parent" class="menu_button" type="button" title="Go to parent task" style="display: none;">
+                            <i class="fa-solid fa-circle-left"></i>
+                        </button>
+                        <input id="objective-generate" class="menu_button" type="button" value="Generate" title="Auto-Generate Tasks">
+                        <input id="objective-generate-more" class="menu_button" type="button" value="More" title="Generate More Tasks" style="display: none;">
+                        <button id="objective-task-add-toplevel" class="menu_button" type="button" title="Add Task">
+                            <i class="fa-solid fa-plus"></i> Add
+                        </button>
+                    </div>
+                </header>
+
+                <label for="objective-text" class="objective-workspace-objective-label">
+                    <small>Objective</small>
+                </label>
+                <textarea id="objective-text" class="text_pole textarea_compact" rows="2"
+                          placeholder="Enter an objective and generate tasks..."></textarea>
+
+                <div id="objective-tasks" class="objective-workspace-tasks-list"></div>
+
+                <footer class="objective-workspace-col-footer">
+                    <label class="checkbox_label">
+                        <input id="objective-show-upcoming" type="checkbox">
+                        <span>Include in prompt</span>
+                    </label>
+                    <div class="objective_block_control flex-container alignitemscenter">
+                        <label for="objective-upcoming-count">Count:</label>
+                        <input id="objective-upcoming-count" class="text_pole widthUnset" type="number" min="1" max="10" value="3">
+                    </div>
+                    <div class="objective-workspace-footer-buttons">
+                        <input id="objective-view-upcoming" class="menu_button" type="button" value="View All">
+                        <input id="objective-clear" class="menu_button" type="button" value="Clear All">
+                    </div>
+                </footer>
+            </section>
+
+            <!-- ----- Subtasks column ----- -->
+            <section class="objective-workspace-col objective-workspace-subtasks">
+                <header class="objective-workspace-col-header objective-workspace-subtasks-header">
+                    <div class="objective-workspace-readout">
+                        <small>Selected Task</small>
+                        <div id="objective-workspace-selected-task-text">—</div>
+                    </div>
+                    <div class="objective-workspace-readout">
+                        <small>Current Subtask</small>
+                        <div id="objective-workspace-current-subtask-text">—</div>
+                    </div>
+                </header>
+                <h3 class="objective-workspace-subtasks-title">Subtasks</h3>
+                <div class="objective-workspace-subtasks-cols">
+                    <div class="objective-workspace-subtasks-col">
+                        <h4>Completed</h4>
+                        <div id="objective-subtasks-completed" class="objective-workspace-list"></div>
+                    </div>
+                    <div class="objective-workspace-subtasks-col">
+                        <h4>Upcoming</h4>
+                        <div id="objective-subtasks-upcoming" class="objective-workspace-list"></div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- ============ Settings sub-panel (slides in from settings button) ============ -->
+        <aside id="objective-workspace-settings-panel" class="objective-workspace-settings-panel" style="display: none;">
+            <header class="objective-workspace-settings-header">
+                <h3>Settings</h3>
+                <button id="objective-workspace-settings-close" class="menu_button" type="button" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </header>
+            <div class="objective-workspace-settings-body">
+                <div class="objective_block objective_block_control flex1 flexFlowColumn">
+                    <label for="objective-chat-depth">Position in Chat</label>
+                    <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99">
+                </div>
+
+                <div class="objective_block objective_block_control flex1 flexFlowColumn">
+                    <label for="objective-check-frequency">Task Check Frequency</label>
+                    <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="0" max="99">
+                    <small>(0 = disabled)</small>
+                </div>
+
+                <div class="objective_block_control flex-container alignitemscenter">
+                    <label class="checkbox_label">
+                        <input id="objective-swipes-decrement" type="checkbox">
+                        <span>Count swipes toward task check frequency</span>
+                    </label>
+                </div>
+
+                <div class="objective_block objective_block_control flex1 flexFlowColumn">
+                    <label for="objective-injection-frequency">Task Injection Frequency</label>
+                    <input id="objective-injection-frequency" class="text_pole widthUnset" type="number" min="1" max="99" value="1">
+                    <small>(messages between task injections)</small>
+                </div>
+
+                <div class="objective_block objective_block_control flex1 flexFlowColumn">
+                    <label for="objective-prompt-role">Task Prompt Role</label>
+                    <select id="objective-prompt-role" class="text_pole">
+                        <option value="assistant">Assistant</option>
+                        <option value="user">User</option>
+                        <option value="system">System</option>
+                    </select>
+                    <small>(how tasks are injected into the context)</small>
+                </div>
+
+                <div class="objective_block_control flex-container alignitemscenter">
+                    <label class="checkbox_label">
+                        <input id="objective-hide-tasks" type="checkbox">
+                        <span>Hide Tasks</span>
+                    </label>
+                </div>
+
+                <div class="objective_block_control flex-container alignitemscenter">
+                    <input id="objective-purge-completed" class="menu_button" type="button" value="Purge Completed Tasks">
+                </div>
+            </div>
+        </aside>
+    </div>
+</div>

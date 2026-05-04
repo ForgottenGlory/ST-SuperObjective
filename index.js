@@ -35,7 +35,7 @@ import {
     showUpcomingTasks,
 } from './lib/upcoming-tasks.js';
 import { setCurrentTask, updateUiTaskList } from './lib/ui-tasklist.js';
-import { doPopout } from './lib/ui-popout.js';
+import { mountWorkspace, openWorkspace } from './lib/ui-workspace.js';
 import { checkTaskCompleted } from './lib/generation.js';
 import { onEditPromptClick } from './lib/prompts-modal.js';
 import { onManageTemplatesClick } from './lib/templates-modal.js';
@@ -59,16 +59,21 @@ import {
 globalThis.debugObjectiveExtension = debugObjectiveExtension;
 
 jQuery(async () => {
-    const settingsHtml = await renderExtensionTemplateAsync(
-        'third-party/ST-SuperObjective',
-        'settings',
-    );
+    const [settingsHtml, workspaceHtml] = await Promise.all([
+        renderExtensionTemplateAsync('third-party/ST-SuperObjective', 'settings'),
+        renderExtensionTemplateAsync('third-party/ST-SuperObjective', 'workspace'),
+    ]);
 
     addManualTaskCheckUi();
 
     const getContainer = () =>
         $(document.getElementById('objective_container') ?? document.getElementById('extensions_settings'));
     getContainer().append(settingsHtml);
+
+    // Mount the workspace overlay (hidden until the user opens it). All
+    // form inputs the existing handlers reference live inside this template,
+    // so loadSettings() can populate them even before the overlay is shown.
+    mountWorkspace(workspaceHtml);
 
     // Settings panel: action buttons + inputs.
     $(document).on('click',   '#objective-generate',          onGenerateObjectiveClick);
@@ -94,9 +99,14 @@ jQuery(async () => {
     $(document).on('click',   '#objective_export',            exportTasks);
     $(document).on('click',   '#objective_import',            importTasks);
     $(document).on('click',   '#objective_statistics',        showStatistics);
-    $(document).on('click',   '#objectiveExtensionPopoutButton', function (e) {
-        doPopout(e);
-        e.stopPropagation();
+    $(document).on('click', '#objective-open-workspace', () => openWorkspace());
+
+    // Top-level "Add" button in the upcoming-tasks panel header.
+    $(document).on('click', '#objective-task-add-toplevel', () => {
+        if (!state.currentObjective) return;
+        const newTask = state.currentObjective.addTask('New Task');
+        updateUiTaskList();
+        setCurrentTask(newTask.id);
     });
 
     // Parent-up button is hidden until we descend into a branch.

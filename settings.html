@@ -1,116 +1,14 @@
 <div id="objective_contents" class="objective-settings">
     <div class="inline-drawer">
         <div class="inline-drawer-toggle inline-drawer-header">
-            <div class="flex-container alignitemscenter margin0">
-                <b data-i18n="ext_obj_title">SuperObjective</b>
-                <i id="objectiveExtensionPopoutButton" class="fa-solid fa-window-restore menu_button margin0"></i>
-            </div>
+            <b data-i18n="ext_obj_title">SuperObjective</b>
             <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
         </div>
         <div class="inline-drawer-content">
-            <div id="objectiveExtensionDrawerContents">
-                <label for="objective-text"><small>Enter an objective and generate tasks. The AI will attempt to
-                        complete tasks autonomously</small></label>
-                <textarea id="objective-text" type="text" class="text_pole textarea_compact" rows="4"></textarea>
-                <div class="objective_block flex-container">
-                    <input id="objective-generate" class="menu_button" type="submit" value="Auto-Generate Tasks" />
-                    <input id="objective-generate-more" class="menu_button" type="submit" value="Generate More Tasks" />
-                    <input id="objective-clear" class="menu_button" type="submit" value="Clear Tasks" />
-                    <label class="checkbox_label"><input id="objective-hide-tasks" type="checkbox">Hide Tasks</label>
-                </div>
-                <div id="objective-parent" class="objective_block flex-container">
-                    <i class="objective-task-button fa-solid fa-circle-left fa-2x" title="Go to Parent"></i>
-                    <small>Go to parent task</small>
-                </div>
-
-                <!-- Progress bar will be inserted here by JavaScript -->
-
-                <!-- Filter and sort controls will be inserted here by JavaScript -->
-
-                <div id="objective-tasks"> </div>
-                <div class="objective_block marginBottom10">
-                    <div class="objective_block objective_block_control flex1 flexFlowColumn">
-                        <label for="objective-chat-depth">Position in Chat</label>
-                        <input id="objective-chat-depth" class="text_pole widthUnset" type="number" min="0" max="99" />
-                    </div>
-                    <br>
-                    <div class="objective_block objective_block_control flex1">
-                        <label for="objective-check-frequency">Task Check Frequency</label>
-                        <input id="objective-check-frequency" class="text_pole widthUnset" type="number" min="0"
-                            max="99" />
-                        <small>(0 = disabled)</small>
-                    </div>
-                </div>
-
-
-                <div class="objective_block_control flex-container alignitemscenter marginBottom10">
-                    <label class="checkbox_label"><input id="objective-swipes-decrement" type="checkbox">Count swipes
-                        toward task check frequency</label>
-                </div>
-
-                <span> Messages until next AI task completion check <span id="objective-counter">0</span></span>
-
-                <div class="objective_block objective_block_control flex1 marginBottom10">
-                    <label for="objective-injection-frequency">Task Injection Frequency</label>
-                    <input id="objective-injection-frequency" class="text_pole widthUnset" type="number" min="1"
-                        max="99" value="1" />
-                    <small>(messages between task injections)</small>
-                </div>
-
-                <div class="objective_block objective_block_control flex1 marginBottom10">
-                    <label for="objective-prompt-role">Task Prompt Role</label>
-                    <select id="objective-prompt-role" class="text_pole">
-                        <option value="assistant">Assistant</option>
-                        <option value="user">User</option>
-                        <option value="system">System</option>
-                    </select>
-                    <small>(how tasks are injected into the context)</small>
-                </div>
-
-                <!-- Recently completed tasks settings -->
-                <div class="objective_block marginTop10">
-                    <div class="objective_block_control flex-container alignitemscenter">
-                        <label class="checkbox_label"><input id="objective-show-completed" type="checkbox">Include
-                            completed tasks in prompt</label>
-                    </div>
-                    <div class="objective_block_control flex-container alignitemscenter">
-                        <label for="objective-completed-count">Number of completed tasks to include:</label>
-                        <input id="objective-completed-count" class="text_pole widthUnset" type="number" min="1"
-                            max="10" value="3" />
-                        <input id="objective-view-completed" class="menu_button" type="button" value="View Tasks" />
-                        <input id="objective-purge-completed" class="menu_button" type="button" value="Purge Tasks" />
-                    </div>
-                </div>
-
-                <!-- Upcoming tasks settings -->
-                <div class="objective_block marginTop10">
-                    <div class="objective_block_control flex-container alignitemscenter">
-                        <label class="checkbox_label"><input id="objective-show-upcoming" type="checkbox">Include
-                            upcoming tasks in prompt</label>
-                    </div>
-                    <div class="objective_block_control flex-container alignitemscenter">
-                        <label for="objective-upcoming-count">Number of upcoming tasks to include:</label>
-                        <input id="objective-upcoming-count" class="text_pole widthUnset" type="number" min="1" max="10"
-                            value="3" />
-                        <input id="objective-view-upcoming" class="menu_button" type="button" value="View Tasks" />
-                    </div>
-                </div>
-
-                <!-- Task management buttons -->
-                <div class="objective_block flex-container flexWrap">
-                    <input id="objective_prompt_edit" class="menu_button" type="submit" value="Manage Prompts" />
-                    <input id="objective_templates" class="menu_button" type="submit" value="Manage Templates" />
-                </div>
-
-                <!-- Export/Import and Statistics buttons -->
-                <div class="objective_block flex-container flexWrap marginTop10">
-                    <input id="objective_export" class="menu_button" type="submit" value="Export Tasks" />
-                    <input id="objective_import" class="menu_button" type="submit" value="Import Tasks" />
-                    <input id="objective_statistics" class="menu_button" type="submit" value="Statistics" />
-                </div>
-
-                <hr class="sysHR">
+            <div class="objective_block flex-container">
+                <input id="objective-open-workspace" class="menu_button" type="button" value="Open SuperObjective" />
             </div>
+            <small>Open the SuperObjective workspace to manage objectives and tasks.</small>
         </div>
     </div>
 </div>
