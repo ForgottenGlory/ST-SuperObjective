@@ -509,6 +509,11 @@
     gap: 6px;
 }
 
+.objective-workspace-subtasks-actions {
+    display: flex;
+    gap: 4px;
+}
+
 .objective-workspace-subtasks-title {
     margin: 0;
     font-size: 1.05em;
