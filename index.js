@@ -35,6 +35,14 @@ import {
     updateStatistics,
     showStatistics,
 } from './lib/statistics.js';
+import {
+    addToRecentlyCompletedTasks,
+    updateCompletedTasksCount,
+    onShowCompletedTasksInput,
+    onCompletedTasksCountInput,
+    onPurgeCompletedTasksClick,
+    showRecentlyCompletedTasks,
+} from './lib/recent-tasks.js';
 
 const MODULE_NAME = 'SuperObjective';
 
@@ -1702,130 +1710,6 @@ async function importTaskTemplates() {
 }
 
 // Add task to recently completed tasks array
-export function addToRecentlyCompletedTasks(task) {
-    // First, remove any existing entry for this task to avoid duplicates
-    state.recentlyCompletedTasks = state.recentlyCompletedTasks.filter(t => t.id !== task.id);
-
-    // Add to the beginning of the array (most recent first)
-    state.recentlyCompletedTasks.unshift({
-        id: task.id,
-        description: task.description,
-        completionDate: task.completionDate
-    });
-
-    // Limit the array size based on user settings
-    const maxCompletedTasks = Number($('#objective-completed-count').val()) || 3;
-    if (state.recentlyCompletedTasks.length > maxCompletedTasks) {
-        state.recentlyCompletedTasks = state.recentlyCompletedTasks.slice(0, maxCompletedTasks);
-    }
-
-    // Update the UI with the new count
-    updateCompletedTasksCount();
-
-    // Update the extension prompt to include recently completed tasks
-    setCurrentTask();
-}
-
-function onShowCompletedTasksInput() {
-    setCurrentTask();
-    saveState();
-}
-
-function onCompletedTasksCountInput() {
-    // Update the recently completed tasks array based on the new count
-    const maxCompletedTasks = Number($('#objective-completed-count').val()) || 3;
-    if (state.recentlyCompletedTasks.length > maxCompletedTasks) {
-        state.recentlyCompletedTasks = state.recentlyCompletedTasks.slice(0, maxCompletedTasks);
-
-        // Update the UI with the new count
-        updateCompletedTasksCount();
-    }
-
-    setCurrentTask();
-    saveState();
-}
-
-async function onPurgeCompletedTasksClick() {
-    // If there are no tasks to purge, just show a message
-    if (state.recentlyCompletedTasks.length === 0) {
-        toastr.info('No recently completed tasks to purge');
-        return;
-    }
-
-    // Ask for confirmation before purging
-    const confirmation = await Popup.show.confirm('Are you sure you want to purge all recently completed tasks?', null);
-
-    if (!confirmation) {
-        return;
-    }
-
-    // Clear the recently completed tasks array
-    state.recentlyCompletedTasks = [];
-
-    // Update the UI with the new count
-    updateCompletedTasksCount();
-
-    // Update the extension prompt
-    setCurrentTask();
-    saveState();
-
-    toastr.success('Recently completed tasks have been purged');
-}
-
-// Show recently completed tasks in a popup
-function showRecentlyCompletedTasks() {
-    if (state.recentlyCompletedTasks.length === 0) {
-        toastr.info('No recently completed tasks');
-        return;
-    }
-
-    let popupText = `
-    <div class="objective_statistics_modal">
-        <h3 class="stats-header">Recently Completed Tasks</h3>
-        
-        <div class="stats-container">
-            <div class="stats-section">
-                <h4 class="stats-section-header">Task History</h4>
-                <p>These tasks are included in the AI's context when "Include completed tasks in prompt" is enabled.</p>
-                
-                <div class="objective_completion_history">
-                    <ul class="objective_history_list">`;
-
-    for (const task of state.recentlyCompletedTasks) {
-        const date = new Date(task.completionDate);
-        const formattedDate = date.toLocaleString();
-        popupText += `
-                        <li class="objective_history_item">
-                            <div class="objective_history_task">${escapeHtml(task.description)}</div>
-                            <div class="objective_history_date">Completed: ${escapeHtml(formattedDate)}</div>
-                        </li>`;
-    }
-
-    popupText += `
-                    </ul>
-                </div>
-            </div>
-            
-            <div class="stats-section">
-                <h4 class="stats-section-header">Actions</h4>
-                <p>Clearing completed tasks will remove them from the prompt context.</p>
-                <div class="flex-container justifyCenter marginTop10">
-                    <button id="recently-completed-tasks-purge" class="menu_button">Purge All Completed Tasks</button>
-                </div>
-            </div>
-        </div>
-    </div>`;
-
-    callGenericPopup(popupText, POPUP_TYPE.TEXT, '', { allowVerticalScrolling: true, wider: true });
-
-    // Add event listener for the purge button in the popup
-    $('#recently-completed-tasks-purge').on('click', () => {
-        onPurgeCompletedTasksClick();
-        // Close the popup
-        $('.popup_cross').click();
-    });
-}
-
 function onPromptRoleInput() {
     // Get the selected role from the dropdown
     const selectedRole = $('#objective-prompt-role').val();
@@ -1996,17 +1880,6 @@ jQuery(async () => {
     selectElement.on('change', onPromptRoleInput);
 });
 
-// Update the UI to show how many recently completed tasks are being tracked
-export function updateCompletedTasksCount() {
-    const count = state.recentlyCompletedTasks.length;
-    const viewButton = $('#objective-view-completed');
-
-    if (count > 0) {
-        viewButton.val(`View Tasks (${count})`);
-    } else {
-        viewButton.val('View Tasks');
-    }
-}
 
 // Update upcoming tasks based on the current task
 export function updateUpcomingTasks() {
