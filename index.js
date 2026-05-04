@@ -24,6 +24,12 @@ import {
     getNextIncompleteTaskRecurse,
     incrementTaskElapsedMessages,
 } from './lib/task.js';
+import {
+    saveState,
+    loadSettings,
+    resetState,
+    debugObjectiveExtension,
+} from './lib/persistence.js';
 
 const MODULE_NAME = 'SuperObjective';
 
@@ -778,59 +784,6 @@ function populateCustomPrompts(selected) {
 //###############################//
 
 
-// Convenient single call. Not much at the moment.
-function resetState() {
-    state.lastMessageWasSwipe = false;
-    state.recentlyCompletedTasks = [];
-    state.upcomingTasks = [];
-    updateCompletedTasksCount();
-    updateUpcomingTasksCount();
-    loadSettings();
-}
-
-//
-export function saveState() {
-    const context = getContext();
-
-    if (state.currentChatId == '') {
-        state.currentChatId = context.chatId;
-    }
-
-    chat_metadata['objective'] = {
-        currentObjectiveId: state.currentObjective.id,
-        taskTree: state.taskTree.toSaveStateRecurse(),
-        checkFrequency: $('#objective-check-frequency').val(),
-        chatDepth: $('#objective-chat-depth').val(),
-        hideTasks: $('#objective-hide-tasks').prop('checked'),
-        swipesDecrement: $('#objective-swipes-decrement').prop('checked'),
-        injectionFrequency: $('#objective-injection-frequency').val(),
-        showCompletedTasks: $('#objective-show-completed').prop('checked'),
-        completedTasksCount: $('#objective-completed-count').val(),
-        recentlyCompletedTasks: state.recentlyCompletedTasks,
-        showUpcomingTasks: $('#objective-show-upcoming').prop('checked'),
-        upcomingTasksCount: $('#objective-upcoming-count').val(),
-        upcomingTasks: state.upcomingTasks,
-        prompts: state.objectivePrompts,
-        selectedCustomPrompt: state.selectedCustomPrompt,
-        completionHistory: chat_metadata.objective.completionHistory,
-        statistics: chat_metadata.objective.statistics
-    };
-
-    saveMetadataDebounced();
-}
-
-// Dump core state
-function debugObjectiveExtension() {
-    console.log(JSON.stringify({
-        'currentTask': state.currentTask,
-        'currentObjective': state.currentObjective,
-        'taskTree': state.taskTree.toSaveStateRecurse(),
-        'chat_metadata': chat_metadata['objective'],
-        'extension_settings': extension_settings['objective'],
-        'prompts': state.objectivePrompts,
-    }, null, 2));
-}
-
 globalThis.debugObjectiveExtension = debugObjectiveExtension;
 
 
@@ -1068,175 +1021,6 @@ function onClearTasksClick() {
         saveState();
         toastr.success('All tasks cleared');
     }
-}
-
-function loadTaskChildrenRecurse(savedTask) {
-    let tempTaskTree = new ObjectiveTask({
-        id: savedTask.id,
-        description: savedTask.description,
-        completed: savedTask.completed,
-        parentId: savedTask.parentId,
-        completionDate: savedTask.completionDate || null,
-        duration: savedTask.duration || 0, // Load the duration property, default to 0 if not present
-        elapsedMessages: savedTask.elapsedMessages || 0, // Load the elapsed messages counter
-    });
-    for (const task of savedTask.children) {
-        const childTask = loadTaskChildrenRecurse(task);
-        tempTaskTree.children.push(childTask);
-    }
-    return tempTaskTree;
-}
-
-function loadSettings() {
-    // Load/Init settings for chatId
-    state.currentChatId = getContext().chatId;
-
-    // Reset Objectives and Tasks in memory
-    state.taskTree = null;
-    state.currentObjective = null;
-    // Reset id counter; loadTaskChildrenRecurse below will bump it back past
-    // any explicit ids it encounters via the constructor.
-    state.nextTaskId = 1;
-
-    // Clear the objective text field when switching chats
-    $('#objective-text').val('');
-
-    // Init extension settings
-    if (Object.keys(extension_settings.objective).length === 0) {
-        Object.assign(extension_settings.objective, {
-            'customPrompts': { 'default': defaultPrompts },
-            'globalStatistics': {
-                tasksCompleted: 0,
-                tasksCreated: 0,
-                objectivesCompleted: 0,
-                lastCompletionDate: null
-            }
-        });
-    }
-
-    // Generate a temporary chatId if none exists
-    if (state.currentChatId == undefined) {
-        state.currentChatId = 'no-chat-id';
-    }
-
-    // Migrate existing settings
-    if (state.currentChatId in extension_settings.objective) {
-        // TODO: Remove this soon
-        chat_metadata['objective'] = extension_settings.objective[state.currentChatId];
-        delete extension_settings.objective[state.currentChatId];
-    }
-
-    if (!('objective' in chat_metadata)) {
-        Object.assign(chat_metadata, { objective: defaultSettings });
-    }
-
-    // Migrate legacy flat objective to new objectiveTree and currentObjective
-    if ('objective' in chat_metadata.objective) {
-
-        // Create root objective from legacy objective
-        state.taskTree = new ObjectiveTask({ id: 0, description: chat_metadata.objective.objective });
-        state.currentObjective = state.taskTree;
-
-        // Populate root objective tree from legacy tasks
-        if ('tasks' in chat_metadata.objective) {
-            let idIncrement = 0;
-            state.taskTree.children = chat_metadata.objective.tasks.map(task => {
-                idIncrement += 1;
-                return new ObjectiveTask({
-                    id: idIncrement,
-                    description: task.description,
-                    completed: task.completed,
-                    parentId: state.taskTree.id,
-                });
-            });
-        }
-        saveState();
-        delete chat_metadata.objective.objective;
-        delete chat_metadata.objective.tasks;
-    } else {
-        // Load Objectives and Tasks (Normal path)
-        if (chat_metadata.objective.taskTree) {
-            state.taskTree = loadTaskChildrenRecurse(chat_metadata.objective.taskTree);
-        }
-    }
-
-    // Make sure there's a root task
-    if (!state.taskTree) {
-        state.taskTree = new ObjectiveTask({ id: 0, description: '' });
-    }
-
-    // Set current objective
-    if (chat_metadata.objective.currentObjectiveId !== null) {
-        try {
-            state.currentObjective = getTaskById(chat_metadata.objective.currentObjectiveId);
-        } catch (e) {
-            console.warn(`Failed to set current objective with ID ${chat_metadata.objective.currentObjectiveId}: ${e}`);
-            state.currentObjective = state.taskTree;
-        }
-    } else {
-        state.currentObjective = state.taskTree;
-    }
-
-    state.checkCounter = chat_metadata['objective'].checkFrequency;
-    state.objectivePrompts = chat_metadata['objective'].prompts;
-
-    // Load recently completed tasks
-    state.recentlyCompletedTasks = chat_metadata.objective.recentlyCompletedTasks || [];
-
-    // Load upcoming tasks
-    state.upcomingTasks = chat_metadata.objective.upcomingTasks || [];
-
-    // Ensure all prompt types exist
-    if (!state.objectivePrompts.additionalTasks) {
-        state.objectivePrompts.additionalTasks = defaultPrompts.additionalTasks;
-    }
-
-    if (!state.objectivePrompts.completedTasks) {
-        state.objectivePrompts.completedTasks = defaultPrompts.completedTasks;
-    }
-
-    if (!state.objectivePrompts.upcomingTasks) {
-        state.objectivePrompts.upcomingTasks = defaultPrompts.upcomingTasks;
-    }
-
-    state.selectedCustomPrompt = chat_metadata['objective'].selectedCustomPrompt || 'default';
-
-    // Reset injection counter
-    state.injectionCounter = 0;
-
-    // Update UI elements
-    $('#objective-counter').text(state.checkCounter);
-    $('#objective-text').text(state.taskTree.description);
-
-    // Ensure parent button is hidden when at root objective
-    if (!state.currentObjective || !state.currentObjective.parentId || state.currentObjective.parentId === '') {
-        $('#objective-parent').hide();
-    }
-
-    // Apply settings to UI controls (single pass).
-    const meta = chat_metadata.objective;
-    $('#objective-chat-depth').val(meta.chatDepth);
-    $('#objective-check-frequency').val(meta.checkFrequency);
-    $('#objective-hide-tasks').prop('checked', !!meta.hideTasks);
-    $('#objective-injection-frequency').val(meta.injectionFrequency || 1);
-    $('#objective-swipes-decrement').prop('checked', !!meta.swipesDecrement);
-    $('#objective-show-completed').prop('checked', !!meta.showCompletedTasks);
-    $('#objective-completed-count').val(meta.completedTasksCount || 3);
-    $('#objective-show-upcoming').prop('checked', !!meta.showUpcomingTasks);
-    $('#objective-upcoming-count').val(meta.upcomingTasksCount || 3);
-
-    // Apply hide-tasks visibility.
-    if (meta.hideTasks) {
-        $('#objective-tasks').hide();
-    } else {
-        $('#objective-tasks').show();
-    }
-
-    updateUiTaskList();
-    updateCompletedTasksCount();
-    updateUpcomingTasksCount();
-
-    setCurrentTask(null, true);
 }
 
 function addManualTaskCheckUi() {
