@@ -14,6 +14,7 @@ import { loadMovingUIState } from '../../../../scripts/power-user.js';
 import { callGenericPopup, Popup, POPUP_TYPE } from '../../../popup.js';
 import { SlashCommandParser } from '../../../slash-commands/SlashCommandParser.js';
 import { SlashCommand } from '../../../slash-commands/SlashCommand.js';
+import { escapeHtml, watchdog } from './lib/utils.js';
 
 const MODULE_NAME = 'SuperObjective';
 
@@ -69,20 +70,6 @@ function getTaskByIdRecurse(taskId, task) {
         }
     }
     return null;
-}
-
-// Escape arbitrary text for safe interpolation into HTML strings. Used for
-// task descriptions, objective text, etc. — all user-controlled content that
-// would otherwise allow self-XSS via crafted import files (e.g. an `<img
-// onerror=...>` description in a malicious template JSON).
-function escapeHtml(value) {
-    if (value === null || value === undefined) return '';
-    return String(value)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#39;');
 }
 
 function substituteParamsPrompts(content, substituteGlobal) {
@@ -1852,12 +1839,6 @@ function addManualTaskCheckUi() {
         </div>`);
     $('#objective-task-manual-check-menu-item').attr('title', 'Trigger AI check of completed tasks').on('click', checkTaskCompleted);
     $('#objective-task-complete-current-menu-item').attr('title', 'Mark the current task as completed.').on('click', markTaskCompleted);
-}
-
-// Cancellable interval helper — used by doPopout's watchdog.
-function watchdog(ms, signal, task) {
-    const intervalId = setInterval(task, ms);
-    signal.addEventListener('abort', () => clearInterval(intervalId));
 }
 
 function doPopout(e) {
