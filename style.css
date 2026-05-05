@@ -207,9 +207,9 @@
 
 /* ---- Kanban-style task cards ---- */
 .objective-task-item {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 8px;
     padding: 8px;
     margin-bottom: 6px;
     border: 1px solid var(--SmartThemeBorderColor, #444);
@@ -221,6 +221,25 @@
 
 .objective-task-item:hover {
     background-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Drag column: vertically centered against the whole card. */
+.objective-task-card-drag {
+    align-self: center;
+    cursor: grab;
+    opacity: 0.5;
+    padding: 0 2px;
+}
+
+.objective-task-item:hover .objective-task-card-drag {
+    opacity: 1;
+}
+
+.objective-task-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
 }
 
 .objective-task-card-top {
@@ -245,19 +264,11 @@
     cursor: text;
 }
 
-.objective-task-item .fa-grip-vertical {
-    cursor: grab;
-    opacity: 0.5;
-    margin-top: 3px;
-}
-
-.objective-task-item:hover .fa-grip-vertical {
-    opacity: 1;
-}
-
 .objective-task-item input[type="checkbox"] {
-    margin-top: 3px;
     flex-shrink: 0;
+    /* Sit at the description's first-line cap height. Baseline alignment
+       on form controls is unreliable; this margin tracks line-height 1.4. */
+    margin-top: 4px;
 }
 
 .ui-sortable-helper {
