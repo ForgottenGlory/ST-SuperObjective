@@ -532,17 +532,20 @@
     flex-shrink: 0;
 }
 
-/* Inline-editable task title. Looks like a header, behaves like a field. */
+/* Inline-editable title sits between back/close buttons in the header. */
 .objective-task-detail-title {
+    flex: 1;
     margin: 0;
-    padding: 4px 6px;
-    font-size: 1.4em;
+    padding: 6px 8px;
+    font-size: 1.3em;
     font-weight: 600;
     line-height: 1.3;
+    background: transparent;
+    color: inherit;
     border: 1px solid transparent;
     border-radius: 4px;
-    cursor: text;
     transition: border-color 0.15s, background-color 0.15s;
+    min-width: 0;
 }
 
 .objective-task-detail-title:hover {
@@ -555,17 +558,10 @@
     background-color: rgba(255, 255, 255, 0.03);
 }
 
-.objective-task-detail-title:empty::before {
-    content: 'Untitled task';
-    opacity: 0.4;
-}
-
-/* Breadcrumb sits in the header bar; flex-1 lets it shrink between back/close. */
+/* Breadcrumb sits below the header on its own row; hidden when empty. */
 .objective-task-detail-breadcrumb {
-    flex: 1;
     font-size: 0.85em;
     opacity: 0.75;
-    min-height: 1.2em;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
