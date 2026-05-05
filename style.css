@@ -205,17 +205,16 @@
     justify-content: space-between;
 }
 
-/* ---- Kanban-style task cards ---- */
+/* ---- Kanban-style task cards: single flex row ---- */
 .objective-task-item {
-    display: grid;
-    grid-template-columns: auto 1fr;
+    display: flex;
+    align-items: flex-start;
     gap: 8px;
     padding: 8px;
     margin-bottom: 6px;
     border: 1px solid var(--SmartThemeBorderColor, #444);
     border-radius: 6px;
     background-color: rgba(255, 255, 255, 0.02);
-    cursor: pointer;
     transition: background-color 0.15s ease;
 }
 
@@ -223,39 +222,18 @@
     background-color: rgba(255, 255, 255, 0.06);
 }
 
-/* Drag column: vertically centered against the whole card. */
 .objective-task-card-drag {
     align-self: center;
     cursor: grab;
     opacity: 0.5;
-    padding: 0 2px;
+    flex-shrink: 0;
 }
 
 .objective-task-item:hover .objective-task-card-drag {
     opacity: 1;
 }
 
-.objective-task-card-content {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-}
-
-.objective-task-card-top {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-}
-
-.objective-task-card-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-}
-
-/* Description fills remaining width and wraps. text cursor inside the
-   span so it's clear that area is editable; pointer everywhere else. */
+/* Description fills remaining width and wraps. */
 .objective-task-item .objective-task {
     flex: 1;
     min-width: 0;
@@ -264,11 +242,16 @@
     cursor: text;
 }
 
-.objective-task-item input[type="checkbox"] {
+/* Form controls + right-side icons sit at the description's first line. */
+.objective-task-card-checkbox,
+.objective-task-card-edit,
+.objective-task-card-delete {
     flex-shrink: 0;
-    /* Sit at the description's first-line cap height. Baseline alignment
-       on form controls is unreliable; this margin tracks line-height 1.4. */
     margin-top: 4px;
+}
+
+.objective-task-card-edit {
+    cursor: pointer;
 }
 
 .ui-sortable-helper {
@@ -311,7 +294,7 @@
     position: relative;
     display: flex;
     flex-direction: column;
-    width: min(96vw, 1600px);
+    width: min(96vw, 1100px);
     height: min(70vh, 70dvh);
     margin: auto;
     overflow: hidden;
