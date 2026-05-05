@@ -527,16 +527,48 @@
     gap: 8px;
 }
 
-.objective-task-detail-title {
-    flex: 1;
-    margin: 0;
-    font-size: 1.1em;
+.objective-task-detail-back-btn,
+.objective-task-detail-close-btn {
+    flex-shrink: 0;
 }
 
+/* Inline-editable task title. Looks like a header, behaves like a field. */
+.objective-task-detail-title {
+    margin: 0;
+    padding: 4px 6px;
+    font-size: 1.4em;
+    font-weight: 600;
+    line-height: 1.3;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: text;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.objective-task-detail-title:hover {
+    border-color: var(--SmartThemeBorderColor, #444);
+}
+
+.objective-task-detail-title:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor, #4c7bd9);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
+.objective-task-detail-title:empty::before {
+    content: 'Untitled task';
+    opacity: 0.4;
+}
+
+/* Breadcrumb sits in the header bar; flex-1 lets it shrink between back/close. */
 .objective-task-detail-breadcrumb {
+    flex: 1;
     font-size: 0.85em;
     opacity: 0.75;
     min-height: 1.2em;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .objective-task-detail-breadcrumb-link {
@@ -549,11 +581,9 @@
     text-decoration: underline;
 }
 
-.objective-task-detail-breadcrumb-current {
-    opacity: 0.9;
-}
-
-.objective-task-detail-section {
+/* Subtasks section fills available height. */
+.objective-task-detail-subtasks-section {
+    flex: 1;
     display: flex;
     flex-direction: column;
     gap: 6px;
@@ -567,33 +597,55 @@
     gap: 8px;
 }
 
-.objective-task-detail-subtasks-section {
-    flex: 1;
-    min-height: 0;
-}
-
 .objective-task-detail-list {
     flex: 1;
     overflow-y: auto;
     min-height: 0;
 }
 
+/* Inline duration metadata row, sits between subtasks and footer. */
 .objective-task-detail-duration-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
+    padding: 8px 0;
+    border-top: 1px solid var(--SmartThemeBorderColor, #444);
     flex-wrap: wrap;
 }
 
-.objective-task-detail-duration-row small {
+.objective-task-detail-duration-row label {
+    margin: 0;
+}
+
+#objective-task-detail-duration {
+    width: 64px;
+}
+
+.objective-task-detail-duration-progress {
+    flex: 1;
     opacity: 0.75;
 }
 
-.objective-task-detail-actions {
+/* Footer with destructive action separated visually. */
+.objective-task-detail-footer {
     display: flex;
     justify-content: flex-end;
     padding-top: 8px;
     border-top: 1px solid var(--SmartThemeBorderColor, #444);
+}
+
+.objective-task-detail-delete-btn {
+    color: #da3f3f;
+    border-color: rgba(218, 63, 63, 0.4);
+}
+
+.objective-task-detail-delete-btn:hover {
+    background-color: rgba(218, 63, 63, 0.1);
+}
+
+/* Prevent button labels from wrapping mid-word. */
+.objective-task-detail-modal .menu_button {
+    white-space: nowrap;
 }
 
 /* ---- Settings sub-panel: floats over the body, doesn't reflow it ---- */

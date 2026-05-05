@@ -122,23 +122,18 @@
             <div class="objective-task-detail-backdrop"></div>
             <div class="objective-task-detail-panel">
                 <header class="objective-task-detail-header">
-                    <button id="objective-task-detail-back" class="menu_button" type="button" title="Back to parent" style="display: none;">
+                    <button id="objective-task-detail-back" class="menu_button objective-task-detail-back-btn" type="button" title="Back to parent" style="display: none;">
                         <i class="fa-solid fa-arrow-left"></i>
                     </button>
-                    <h2 class="objective-task-detail-title">Task Detail</h2>
-                    <button id="objective-task-detail-close" class="menu_button" type="button" title="Close">
+                    <nav id="objective-task-detail-breadcrumb" class="objective-task-detail-breadcrumb"></nav>
+                    <button id="objective-task-detail-close" class="menu_button objective-task-detail-close-btn" type="button" title="Close">
                         <i class="fa-solid fa-xmark"></i>
                     </button>
                 </header>
 
-                <nav id="objective-task-detail-breadcrumb" class="objective-task-detail-breadcrumb"></nav>
+                <h2 id="objective-task-detail-title" class="objective-task-detail-title" contenteditable="true" spellcheck="false"></h2>
 
-                <section class="objective-task-detail-section">
-                    <label for="objective-task-detail-description"><small>Description</small></label>
-                    <textarea id="objective-task-detail-description" class="text_pole" rows="3"></textarea>
-                </section>
-
-                <section class="objective-task-detail-section objective-task-detail-subtasks-section">
+                <section class="objective-task-detail-subtasks-section">
                     <div class="objective-task-detail-section-header">
                         <small>Subtasks</small>
                         <button id="objective-task-detail-add-subtask" class="menu_button" type="button">
@@ -148,22 +143,19 @@
                     <div id="objective-task-detail-subtasks" class="objective-task-detail-list"></div>
                 </section>
 
-                <section class="objective-task-detail-section">
-                    <div class="objective-task-detail-section-header">
-                        <small>Duration (minimum messages before auto-complete)</small>
-                    </div>
-                    <div class="objective-task-detail-duration-row">
-                        <input id="objective-task-detail-duration" class="text_pole widthUnset" type="number" min="0" max="50" value="0">
-                        <small id="objective-task-detail-duration-progress"></small>
-                        <button id="objective-task-detail-duration-reset" class="menu_button" type="button" style="display: none;">Reset Progress</button>
-                    </div>
-                </section>
+                <div class="objective-task-detail-duration-row">
+                    <label for="objective-task-detail-duration"><small>Duration:</small></label>
+                    <input id="objective-task-detail-duration" class="text_pole widthUnset" type="number" min="0" max="50" value="0">
+                    <small>messages</small>
+                    <small id="objective-task-detail-duration-progress" class="objective-task-detail-duration-progress"></small>
+                    <button id="objective-task-detail-duration-reset" class="menu_button" type="button" style="display: none;">Reset</button>
+                </div>
 
-                <section class="objective-task-detail-actions">
-                    <button id="objective-task-detail-delete" class="menu_button" type="button">
+                <footer class="objective-task-detail-footer">
+                    <button id="objective-task-detail-delete" class="menu_button objective-task-detail-delete-btn" type="button">
                         <i class="fa-solid fa-trash"></i> Delete Task
                     </button>
-                </section>
+                </footer>
             </div>
         </div>
 
