@@ -2,14 +2,10 @@
     <div class="objective-workspace-backdrop"></div>
     <div class="objective-workspace-panel">
 
-        <button id="objective-workspace-close" class="menu_button objective-workspace-close-btn" type="button" title="Close">
-            <i class="fa-solid fa-xmark"></i>
-        </button>
-
-        <!-- ============ Header row ============ -->
-        <div class="objective-workspace-header">
+        <!-- ============ Slim top bar ============ -->
+        <div class="objective-workspace-topbar">
             <div class="objective-workspace-brand">
-                <div class="objective-workspace-title">SuperObjective</div>
+                <span class="objective-workspace-title">SuperObjective</span>
                 <div id="objective-progress-container" class="objective-workspace-progress">
                     <div class="objective-workspace-progress-label">No tasks yet</div>
                     <div class="progress-bar-container">
@@ -18,39 +14,43 @@
                 </div>
             </div>
 
-            <div class="objective-workspace-currenttask">
-                <small>Current Task</small>
-                <div id="objective-workspace-current-task-text">—</div>
-                <div class="objective-workspace-currenttask-meta">
-                    Messages until next check: <span id="objective-counter">0</span>
+            <div class="objective-workspace-topbar-actions">
+                <button id="objective-workspace-more" class="menu_button" type="button" title="More">
+                    <i class="fa-solid fa-ellipsis-vertical"></i>
+                </button>
+                <button id="objective-workspace-close" class="menu_button" type="button" title="Close">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+
+                <div id="objective-workspace-overflow-menu" class="objective-workspace-overflow-menu" style="display: none;">
+                    <button id="objective-workspace-settings-btn" class="menu_button" type="button">
+                        <i class="fa-solid fa-gear"></i> Settings
+                    </button>
+                    <button id="objective_prompt_edit" class="menu_button" type="button">
+                        <i class="fa-solid fa-pen-to-square"></i> Prompts
+                    </button>
+                    <button id="objective_templates" class="menu_button" type="button">
+                        <i class="fa-solid fa-layer-group"></i> Templates
+                    </button>
+                    <button id="objective_statistics" class="menu_button" type="button">
+                        <i class="fa-solid fa-chart-simple"></i> Statistics
+                    </button>
+                    <button id="objective_export" class="menu_button" type="button">
+                        <i class="fa-solid fa-download"></i> Export Tasks
+                    </button>
+                    <button id="objective_import" class="menu_button" type="button">
+                        <i class="fa-solid fa-upload"></i> Import Tasks
+                    </button>
                 </div>
             </div>
+        </div>
 
-            <div class="objective-workspace-actions">
-                <button id="objective-workspace-settings-btn" class="menu_button" type="button" title="Settings">
-                    <i class="fa-solid fa-gear"></i>
-                    <span>Settings</span>
-                </button>
-                <button id="objective_prompt_edit" class="menu_button" type="button" title="Manage Prompts">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <span>Prompts</span>
-                </button>
-                <button id="objective_templates" class="menu_button" type="button" title="Manage Templates">
-                    <i class="fa-solid fa-layer-group"></i>
-                    <span>Templates</span>
-                </button>
-                <button id="objective_statistics" class="menu_button" type="button" title="Statistics">
-                    <i class="fa-solid fa-chart-simple"></i>
-                    <span>Stats</span>
-                </button>
-                <button id="objective_export" class="menu_button" type="button" title="Export Tasks">
-                    <i class="fa-solid fa-download"></i>
-                    <span>Export</span>
-                </button>
-                <button id="objective_import" class="menu_button" type="button" title="Import Tasks">
-                    <i class="fa-solid fa-upload"></i>
-                    <span>Import</span>
-                </button>
+        <!-- ============ Current Task ribbon ============ -->
+        <div class="objective-workspace-currenttask-ribbon">
+            <small>Current Task</small>
+            <div id="objective-workspace-current-task-text">—</div>
+            <div class="objective-workspace-currenttask-meta">
+                next check in <span id="objective-counter">0</span>
             </div>
         </div>
 

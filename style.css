@@ -348,92 +348,103 @@
 }
 
 
-/* ---- Header row ---- */
-.objective-workspace-header {
-    display: grid;
-    grid-template-columns: minmax(180px, 1fr) minmax(0, 2fr) auto;
-    gap: 10px;
-    align-items: start;
+/* ---- Slim top bar: brand+progress on the left, action icons on the right ---- */
+.objective-workspace-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 .objective-workspace-brand {
+    flex: 1;
     display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding: 8px;
-    border: 1px solid var(--SmartThemeBorderColor, #444);
-    border-radius: 6px;
+    align-items: center;
+    gap: 14px;
     min-width: 0;
 }
 
 .objective-workspace-title {
-    font-size: 1.3em;
+    font-size: 1.15em;
     font-weight: 600;
+    flex-shrink: 0;
 }
 
 .objective-workspace-progress {
+    flex: 1;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 3px;
+    min-width: 0;
 }
 
 .objective-workspace-progress-label {
-    font-size: 0.85em;
-    opacity: 0.8;
+    font-size: 0.8em;
+    opacity: 0.75;
 }
 
-.objective-workspace-currenttask {
+.objective-workspace-topbar-actions {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-shrink: 0;
+}
+
+/* Overflow menu popover that drops out of the ⋯ button. */
+.objective-workspace-overflow-menu {
+    position: absolute;
+    top: calc(100% + 4px);
+    right: 0;
     display: flex;
     flex-direction: column;
-    justify-content: center;
     gap: 2px;
-    padding: 8px;
+    padding: 6px;
+    min-width: 180px;
+    background-color: var(--SmartThemeBlurTintColor, rgba(20, 20, 20, 0.98));
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 6px;
+    z-index: 10;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+.objective-workspace-overflow-menu .menu_button {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-start;
+    text-align: left;
+    width: 100%;
+}
+
+/* ---- Full-width current-task ribbon ---- */
+.objective-workspace-currenttask-ribbon {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 10px;
     border: 1px solid var(--SmartThemeBorderColor, #444);
     border-radius: 6px;
     min-width: 0;
 }
 
+.objective-workspace-currenttask-ribbon small {
+    opacity: 0.7;
+    flex-shrink: 0;
+}
+
 #objective-workspace-current-task-text {
-    font-size: 1.05em;
+    flex: 1;
     font-weight: 500;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
 }
 
 .objective-workspace-currenttask-meta {
-    font-size: 0.8em;
+    font-size: 0.85em;
     opacity: 0.7;
-}
-
-.objective-workspace-actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    align-items: center;
-    padding: 6px;
-    margin-right: 36px; /* leave room for the absolute-positioned close button */
-    border: 1px solid var(--SmartThemeBorderColor, #444);
-    border-radius: 6px;
-}
-
-.objective-workspace-actions .menu_button {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-}
-
-.objective-workspace-close-btn {
-    position: absolute !important;
-    top: 6px !important;
-    right: 6px !important;
-    left: auto !important;
-    z-index: 2;
-    width: 28px;
-    height: 28px;
-    padding: 0;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
+    flex-shrink: 0;
 }
 
 /* ---- Body row: three columns. flex: 1 fills the panel's flex column. ---- */
@@ -591,10 +602,10 @@
 /* ---- Settings sub-panel: floats over the body, doesn't reflow it ---- */
 .objective-workspace-settings-panel {
     position: absolute;
-    top: 70px;
+    top: 90px;
     right: 10px;
     width: min(360px, 90vw);
-    max-height: calc(100% - 90px);
+    max-height: calc(100% - 110px);
     display: none;
     flex-direction: column;
     gap: 8px;
