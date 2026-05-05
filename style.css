@@ -64,11 +64,6 @@
     box-shadow: 0 0 3px rgba(255, 204, 0, 0.5);
 }
 
-#objective-tasks span {
-    margin: unset;
-    margin-bottom: 5px !important;
-}
-
 .objective_prompt_modal textarea {
     max-height: 50vh;
     max-height: 50dvh;
@@ -210,23 +205,59 @@
     justify-content: space-between;
 }
 
+/* ---- Kanban-style task cards ---- */
 .objective-task-item {
-    margin-bottom: 8px;
-    transition: background-color 0.2s ease;
-    border-radius: 5px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    margin-bottom: 6px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 0.02);
+    cursor: pointer;
+    transition: background-color 0.15s ease;
 }
 
 .objective-task-item:hover {
-    background-color: rgba(80, 80, 80, 0.3);
+    background-color: rgba(255, 255, 255, 0.06);
+}
+
+.objective-task-card-top {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.objective-task-card-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
+
+/* Description fills remaining width and wraps. text cursor inside the
+   span so it's clear that area is editable; pointer everywhere else. */
+.objective-task-item .objective-task {
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+    line-height: 1.4;
+    cursor: text;
 }
 
 .objective-task-item .fa-grip-vertical {
     cursor: grab;
     opacity: 0.5;
+    margin-top: 3px;
 }
 
 .objective-task-item:hover .fa-grip-vertical {
     opacity: 1;
+}
+
+.objective-task-item input[type="checkbox"] {
+    margin-top: 3px;
+    flex-shrink: 0;
 }
 
 .ui-sortable-helper {
