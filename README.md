@@ -17,6 +17,32 @@ Before you begin, ensure you've met the following prerequisites:
 - **Uninstall the Objectives extension using the "Manage Extensions" button in the Extensions panel.**
 - Install the ST-SuperObjective extension using this link: https://github.com/ForgottenGlory/ST-SuperObjective.git and the "Install extension" button on the extensions panel.
 
+### Trying the new workspace UI (test branch)
+
+The kanban-style workspace described in this README lives on the `test` branch while it's in beta. SillyTavern's **Install extension** dialog clones the default branch (`main`), so a standard install will give you the older inline-drawer UI. To get the new UI, pick whichever option fits your setup:
+
+**Option 1 — Install, then check out the test branch:**
+
+```
+cd <SillyTavern>/data/default-user/extensions/ST-SuperObjective
+git fetch && git checkout test
+```
+
+Refresh SillyTavern when done.
+
+**Option 2 — Clone the test branch directly (skip the Install dialog):**
+
+```
+cd <SillyTavern>/data/default-user/extensions/
+git clone -b test https://github.com/ForgottenGlory/ST-SuperObjective.git
+```
+
+Refresh SillyTavern when done.
+
+**Option 3 — Recent SillyTavern builds:** the Install extension dialog has a separate **branch** field. Paste the repo URL above and type `test` in the branch field.
+
+To go back to the stable UI later, run `git checkout main && git pull` inside the extension directory.
+
 ## Common Use Cases
 
 Your imagination is the limit! You can give the AI any objective you wish, and it will plan out how to achieve it. Examples include:
