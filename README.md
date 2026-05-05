@@ -28,122 +28,110 @@ Your imagination is the limit! You can give the AI any objective you wish, and i
 
 ## Getting Started
 
-1. Open the Extensions menu and select SuperObjective
-2. Type an objective into the top text box
-3. Click "Auto-Generate Tasks" to have the AI create a task list
-4. Watch as the AI works through the tasks automatically
+1. Open the Extensions panel in SillyTavern, find the SuperObjective drawer, and click **Open SuperObjective**.
+2. Type your goal into the **Objective** field at the top of the workspace (e.g. *"Conquer the world"*).
+3. Click **Generate** in the Upcoming Tasks column header — the AI builds a task list from your objective.
+4. Watch the AI work through the tasks. Check tasks off manually any time, or let auto-completion handle it.
+
+> Tip: try `examples/conquer-the-world.json` (six top-level steps with subtasks) via **⋯ → Import Tasks** to see a fully-populated workspace.
+
+## The Workspace
+
+Clicking **Open SuperObjective** drops you into a kanban-style overlay:
+
+- **Top bar** — extension name, objective progress bar, **⋯** overflow menu (Settings / Prompts / Templates / Statistics / Export / Import), and close button.
+- **Objective ribbon** — your overarching goal. Edits save on focus-out.
+- **Current Task ribbon** — what the AI is actively driving toward, plus a "next check in N" counter.
+- **Upcoming Tasks** column — incomplete top-level tasks as kanban cards. Drag handle, checkbox, description, pencil (open detail), delete.
+- **Completed Tasks** column — checked-off tasks. Uncheck to send them back to Upcoming.
+
+Each card shows a `Subtasks: 1/3` hint when it has children, so you can see depth at a glance.
 
 ## Key Features
 
 ### Task Generation and Management
 
-- **Auto-Generate Tasks**: Creates a complete task list based on your objective
-- **Generate More Tasks**: Adds additional tasks without starting over
-- **Task Hierarchy**: Create parent/child relationships between tasks
-- **Manual Task Creation**: Add your own tasks at any position
-- **Task Editing**: Modify task descriptions at any time
-- **Task Movement**: Reorder tasks using drag-and-drop functionality
-- **Task Deletion**: Remove tasks with the delete button
+- **Generate** rebuilds the task list from your current objective.
+- **More** appends additional tasks that complement the existing ones.
+- **+Add** in either column header inserts a blank task you can rename inline.
+- **Drag-reorder** within and across both columns.
+- **Inline rename** — click the description text on any card and type.
+
+### Task Detail Modal
+
+Click the **pencil** on any card to open the task detail modal. From there you can:
+
+- Rename the task in a prominent inline title field.
+- Add and reorder **subtasks** (which themselves get the same row affordances — click their pencil to drill in further).
+- Navigate up the parent chain via the **breadcrumb** or the **← Back** button.
+- Set a per-task **duration** (minimum messages before auto-completion).
+- **Delete** the task and any subtasks under it.
+
+### Task Hierarchy
+
+Subtasks live one click away, not in a permanent panel — open a task's detail modal and add children there. Click a subtask's pencil to drill deeper; the breadcrumb tracks your path back. Parent tasks auto-complete when all of their subtasks are done.
 
 ### Task Progress Visualization
 
-- Progress bar shows completion percentage at a glance
-- Displays count of completed vs. total tasks
-- Updates dynamically as tasks are completed
-- Provides visual feedback with a green progress bar
+Progress bar in the top bar shows `X/Y tasks (Z%)` for the objective and updates live as tasks complete or uncomplete.
 
 ### Task Completion Tracking
 
-- Automatic task completion checking at configurable intervals
-- Manual task completion via checkboxes
-- Manual task check via the Extras menu
-- Parent tasks auto-complete when all children are done
+- Automatic task completion checking at configurable intervals.
+- Manual completion via the checkbox on any card.
+- Manual check or "Complete Current Task" via the SillyTavern Extras (wand) menu.
+- Parent tasks auto-complete when all children are done; uncompleting a task earlier in the list takes back focus from a later one.
 
-### Task Role Configuration
+### Task Duration
 
-- **Task Role Selection**: Choose how tasks are injected into the prompt (Assistant, User, or System messages)
-- Works with both chat completion and text completion APIs
-
-### Task Duration Feature
-
-- **Task Duration**: Set a minimum number of messages before a task can auto-complete
-- Visual feedback shows progress toward duration requirement (yellow means duration is in progress, green means duration has elapsed)
-- Manual task completion remains available regardless of duration setting
+Set a minimum number of messages that must pass before a task can be auto-completed. Useful for goals that need extended conversation. Live progress (`elapsed/duration`) shows next to the duration field in the detail modal; **Reset Progress** zeroes the counter.
 
 ### Recently Completed Tasks
 
-- Maintains a configurable list of recently completed tasks
-- Automatically adds tasks when marked complete
-- Control how many completed tasks are included in the prompt
-- View completed tasks in a dedicated popup with enhanced UI
-- Purge tasks when no longer needed
-- Enable/disable including completed tasks in the prompt
+The Completed column tracks every completed top-level task. Footer controls let you:
+
+- Toggle **Include in prompt** to inject recently-completed task descriptions into the AI's context.
+- Set **Count** for how many completed tasks the prompt should reference.
+- **View All** to see the prompt-injection cache as a list.
 
 ### Upcoming Tasks
 
-- Automatically identifies and tracks tasks that follow the current task
-- Prioritizes tasks in the same parent container as the current task
-- Control how many upcoming tasks are included in the prompt
-- View upcoming tasks in a dedicated popup with enhanced UI
-- Purge tasks when no longer needed
-- Enable/disable including upcoming tasks in the prompt
+The Upcoming column footer mirrors the same toggles for upcoming tasks — control how many appear in the AI's context and whether to inject them at all.
 
-### Tasks, Templates, and Prompts Import/Export
+### Templates, Import / Export, Statistics
 
-- **Task Templates**: Save and load reusable task structures
-- **Export Tasks**: Save your current tasks to a JSON file
-- **Import Tasks**: Load tasks from a previously exported file
-- **Template Management**: Preview, rename, and delete templates
-- **Prompt Sets Export/Import**: Export and import custom prompt sets with custom filenames
+Available from the **⋯** menu in the top bar:
 
-### Statistics and History
-
-- Track task completion with timestamps
-- View statistics on completed tasks and objectives
-- Global statistics across all chats
-- Chat-specific statistics for the current session
-- View recently completed tasks with descriptions and dates
+- **Prompts** — edit and save the prompts used for generation and checking.
+- **Templates** — save reusable task structures (without completion state) and reload them later.
+- **Statistics** — chat and global counters for tasks created / completed / objectives finished.
+- **Export Tasks / Import Tasks** — round-trip the current task tree as JSON. The format includes durations and completion state.
 
 ## Configuration
 
-### Basic Settings
+Open via **⋯ → Settings**:
 
-- **Position in Chat**: Controls how prominently the task appears in the AI's context 
-- **Task Check Frequency**: How often the AI checks if a task is complete (3 default, 0 disables)
-- **Count Swipes Toward Task Check**: Option to include or exclude message swipes from decrementing the task check counter (disabled by default)
-- **Task Injection Frequency**: Controls how often task information is injected into the AI's context (1 default, meaning every message)
-- **Hide Tasks**: Option to hide the task list for a more mysterious experience
-
-### Advanced Settings
-
-- **Custom Prompts**: Edit the prompts used for task generation and checking
-- **Save/Load Prompts**: Persist your custom prompts for future use
+- **Position in Chat** — depth at which the task is injected into the AI's context.
+- **Task Check Frequency** — how often the AI checks if a task is complete (3 default, 0 disables).
+- **Count swipes toward task check frequency** — include or exclude message swipes from decrementing the check counter (disabled by default).
+- **Task Injection Frequency** — messages between task injections (1 default = every message).
+- **Task Prompt Role** — Assistant, User, or System. Works with both chat-completion and text-completion APIs.
+- **Hide Tasks** — hide the task list for a more mysterious experience.
+- **Purge Completed Tasks** — clear the recently-completed prompt cache.
 
 ## Usage Tips
 
 ### Current Task Selection
 
-The current task will always be the first listed incomplete task. Any updates to tasks will trigger a check for what the current task should be. Tasks are selected depth-first, meaning all child tasks will be selected in order first, then continue down the list.
-
-### Branch Tasks
-
-Click the Branch Task button to set the current task as an objective where you can generate or manually create child tasks. You can continue to turn any child task into an objective to create deeper hierarchies.
-
-### Task Duration
-
-Click the clock icon on a task to set a minimum number of messages that must pass before the task can be automatically completed. This is useful for tasks that require extended conversation.
-
-### Task Role Selection
-
-Use the dropdown menu on each task to determine how it's injected into the prompt - as Assistant, User, or System messages. This works with both chat completion and text completion APIs.
+The current task is always the first incomplete leaf in the tree (depth-first). Editing the tree triggers a re-pick — uncompleting an earlier task hands focus back to it; adding a task elsewhere doesn't change focus.
 
 ### Hiding Tasks
 
-If you want to remain unaware of what tasks the AI is attempting to complete, check the Hide Tasks box to hide the task list. For maximum mystery, do this before clicking Auto-Generate Tasks!
+If you want to stay in the dark about what the AI is pursuing, enable **Hide Tasks** in Settings. Best done before clicking Generate.
 
 ### Task Context Awareness
 
-With the recently completed and upcoming tasks features, the AI maintains awareness of both past accomplishments and future goals, creating a more coherent and goal-directed conversation experience.
+With Include-in-prompt toggled on for both Completed and Upcoming, the AI sees both recent wins and the queue ahead — useful for keeping conversations goal-directed without you needing to remind it manually.
 
 ## Warning
 
