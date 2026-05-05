@@ -286,31 +286,6 @@
     margin-bottom: 8px;
 }
 
-.task-duration-progress-complete {
-    color: #33cc33;
-    font-weight: bold;
-}
-
-/* Completed duration */
-.objective-task-duration-complete {
-    color: #33cc33 !important;
-}
-
-/* Duration set but not completed */
-.objective-task-duration-pending {
-    color: #ffcc00 !important;
-}
-
-/* Duration modal styling */
-.objective_duration_modal h4 {
-    margin-top: 10px;
-    margin-bottom: 15px;
-    border-bottom: 1px solid #444;
-}
-
-.objective_duration_modal .menu_button {
-    margin-right: 5px;
-}
 
 /* ============================================================ */
 /*              Workspace layout (structural only)              */
@@ -447,11 +422,11 @@
     flex-shrink: 0;
 }
 
-/* ---- Body row: three columns. flex: 1 fills the panel's flex column. ---- */
+/* ---- Body: two columns (Upcoming + Completed) ---- */
 .objective-workspace-body {
     flex: 1;
     display: grid;
-    grid-template-columns: 1fr 1.2fr 1.4fr;
+    grid-template-columns: 1fr 1fr;
     gap: 10px;
     min-height: 0;
 }
@@ -533,70 +508,109 @@
     margin-top: 2px;
 }
 
-/* ---- Subtasks panel: nested two-column grid for completed/upcoming ---- */
-.objective-workspace-subtasks-header {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+/* ---- Detail modal (opens from per-card pencil) ---- */
+.objective-task-detail-modal {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    align-items: stretch;
+    justify-content: center;
+}
+
+.objective-task-detail-backdrop {
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.objective-task-detail-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: min(720px, 90%);
+    height: min(80%, 80dvh);
+    margin: auto;
+    padding: 16px;
+    background-color: var(--SmartThemeBlurTintColor, rgba(20, 20, 20, 0.98));
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.objective-task-detail-header {
+    display: flex;
+    align-items: center;
     gap: 8px;
 }
 
-.objective-workspace-readout {
+.objective-task-detail-title {
+    flex: 1;
+    margin: 0;
+    font-size: 1.1em;
+}
+
+.objective-task-detail-breadcrumb {
+    font-size: 0.85em;
+    opacity: 0.75;
+    min-height: 1.2em;
+}
+
+.objective-task-detail-breadcrumb-link {
+    color: var(--SmartThemeQuoteColor, #4c7bd9);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.objective-task-detail-breadcrumb-link:hover {
+    text-decoration: underline;
+}
+
+.objective-task-detail-breadcrumb-current {
+    opacity: 0.9;
+}
+
+.objective-task-detail-section {
     display: flex;
     flex-direction: column;
-    gap: 2px;
-    padding: 6px;
-    border: 1px solid var(--SmartThemeBorderColor, #444);
-    border-radius: 4px;
-    min-width: 0;
+    gap: 6px;
+    min-height: 0;
 }
 
-.objective-workspace-readout > div {
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.objective-workspace-subtasks-title-row {
+.objective-task-detail-section-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 6px;
-}
-
-.objective-workspace-subtasks-actions {
-    display: flex;
-    gap: 4px;
-}
-
-.objective-workspace-subtasks-title {
-    margin: 0;
-    font-size: 1.05em;
-}
-
-.objective-workspace-subtasks-cols {
-    flex: 1;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
     gap: 8px;
+}
+
+.objective-task-detail-subtasks-section {
+    flex: 1;
     min-height: 0;
 }
 
-.objective-workspace-subtasks-col {
-    display: grid;
-    grid-template-rows: auto 1fr;
-    gap: 4px;
+.objective-task-detail-list {
+    flex: 1;
+    overflow-y: auto;
     min-height: 0;
 }
 
-.objective-workspace-subtasks-col h4 {
-    margin: 0;
-    font-size: 0.95em;
-    text-align: center;
+.objective-task-detail-duration-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
 }
 
-/* ---- Selected task highlight (separate from current-task highlight) ---- */
-.objective-task-item.objective-task-item-selected {
-    outline: 2px solid var(--SmartThemeQuoteColor, #4c7bd9);
-    outline-offset: -2px;
+.objective-task-detail-duration-row small {
+    opacity: 0.75;
+}
+
+.objective-task-detail-actions {
+    display: flex;
+    justify-content: flex-end;
+    padding-top: 8px;
+    border-top: 1px solid var(--SmartThemeBorderColor, #444);
 }
 
 /* ---- Settings sub-panel: floats over the body, doesn't reflow it ---- */
@@ -634,16 +648,6 @@
 }
 
 /* ---- Responsive: stack columns when narrow ---- */
-@media (max-width: 1100px) {
-    .objective-workspace-body {
-        grid-template-columns: 1fr 1fr;
-        grid-template-rows: 1fr 1fr;
-    }
-    .objective-workspace-subtasks {
-        grid-column: span 2;
-    }
-}
-
 @media (max-width: 700px) {
     .objective-workspace-panel {
         width: 100vw;
@@ -651,18 +655,13 @@
         height: 100dvh;
         border-radius: 0;
     }
-    .objective-workspace-header {
-        grid-template-columns: 1fr;
-    }
     .objective-workspace-body {
         grid-template-columns: 1fr;
-        grid-template-rows: auto auto auto;
+        grid-template-rows: 1fr 1fr;
     }
-    .objective-workspace-subtasks {
-        grid-column: auto;
-    }
-    .objective-workspace-subtasks-header,
-    .objective-workspace-subtasks-cols {
-        grid-template-columns: 1fr;
+    .objective-task-detail-panel {
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
     }
 }

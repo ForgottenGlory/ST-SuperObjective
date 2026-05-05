@@ -115,40 +115,56 @@
                 </footer>
             </section>
 
-            <!-- ----- Subtasks column ----- -->
-            <section class="objective-workspace-col objective-workspace-subtasks">
-                <header class="objective-workspace-col-header objective-workspace-subtasks-header">
-                    <div class="objective-workspace-readout">
-                        <small>Selected Task</small>
-                        <div id="objective-workspace-selected-task-text">—</div>
-                    </div>
-                    <div class="objective-workspace-readout">
-                        <small>Current Subtask</small>
-                        <div id="objective-workspace-current-subtask-text">—</div>
-                    </div>
+        </div>
+
+        <!-- ============ Task Detail modal (opens from per-card pencil) ============ -->
+        <div id="objective-task-detail-modal" class="objective-task-detail-modal" style="display: none;">
+            <div class="objective-task-detail-backdrop"></div>
+            <div class="objective-task-detail-panel">
+                <header class="objective-task-detail-header">
+                    <button id="objective-task-detail-back" class="menu_button" type="button" title="Back to parent" style="display: none;">
+                        <i class="fa-solid fa-arrow-left"></i>
+                    </button>
+                    <h2 class="objective-task-detail-title">Task Detail</h2>
+                    <button id="objective-task-detail-close" class="menu_button" type="button" title="Close">
+                        <i class="fa-solid fa-xmark"></i>
+                    </button>
                 </header>
-                <div class="objective-workspace-subtasks-title-row">
-                    <h3 class="objective-workspace-subtasks-title">Subtasks</h3>
-                    <div class="objective-workspace-subtasks-actions">
-                        <button id="objective-subtasks-up" class="menu_button" type="button" title="Go to parent task" disabled>
-                            <i class="fa-solid fa-arrow-up"></i> Up
+
+                <nav id="objective-task-detail-breadcrumb" class="objective-task-detail-breadcrumb"></nav>
+
+                <section class="objective-task-detail-section">
+                    <label for="objective-task-detail-description"><small>Description</small></label>
+                    <textarea id="objective-task-detail-description" class="text_pole" rows="3"></textarea>
+                </section>
+
+                <section class="objective-task-detail-section objective-task-detail-subtasks-section">
+                    <div class="objective-task-detail-section-header">
+                        <small>Subtasks</small>
+                        <button id="objective-task-detail-add-subtask" class="menu_button" type="button">
+                            <i class="fa-solid fa-plus"></i> Add Subtask
                         </button>
-                        <button id="objective-add-subtask" class="menu_button" type="button" title="Add subtask under selected task" disabled>
-                            <i class="fa-solid fa-plus"></i> Add
-                        </button>
                     </div>
-                </div>
-                <div class="objective-workspace-subtasks-cols">
-                    <div class="objective-workspace-subtasks-col">
-                        <h4>Completed</h4>
-                        <div id="objective-subtasks-completed" class="objective-workspace-list"></div>
+                    <div id="objective-task-detail-subtasks" class="objective-task-detail-list"></div>
+                </section>
+
+                <section class="objective-task-detail-section">
+                    <div class="objective-task-detail-section-header">
+                        <small>Duration (minimum messages before auto-complete)</small>
                     </div>
-                    <div class="objective-workspace-subtasks-col">
-                        <h4>Upcoming</h4>
-                        <div id="objective-subtasks-upcoming" class="objective-workspace-list"></div>
+                    <div class="objective-task-detail-duration-row">
+                        <input id="objective-task-detail-duration" class="text_pole widthUnset" type="number" min="0" max="50" value="0">
+                        <small id="objective-task-detail-duration-progress"></small>
+                        <button id="objective-task-detail-duration-reset" class="menu_button" type="button" style="display: none;">Reset Progress</button>
                     </div>
-                </div>
-            </section>
+                </section>
+
+                <section class="objective-task-detail-actions">
+                    <button id="objective-task-detail-delete" class="menu_button" type="button">
+                        <i class="fa-solid fa-trash"></i> Delete Task
+                    </button>
+                </section>
+            </div>
         </div>
 
         <!-- ============ Settings sub-panel (slides in from settings button) ============ -->

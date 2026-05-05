@@ -35,7 +35,7 @@ import {
     showUpcomingTasks,
 } from './lib/upcoming-tasks.js';
 import { setCurrentTask, updateUiTaskList } from './lib/ui-tasklist.js';
-import { mountWorkspace, openWorkspace, getSelectedTask, setSelectedTask } from './lib/ui-workspace.js';
+import { mountWorkspace, openWorkspace } from './lib/ui-workspace.js';
 import { checkTaskCompleted } from './lib/generation.js';
 import { onEditPromptClick } from './lib/prompts-modal.js';
 import { onManageTemplatesClick } from './lib/templates-modal.js';
@@ -99,23 +99,13 @@ jQuery(async () => {
     $(document).on('click',   '#objective_statistics',        showStatistics);
     $(document).on('click', '#objective-open-workspace', () => openWorkspace());
 
-    // Top-level "Add" button in the upcoming-tasks panel header. Doesn't
+    // Top-level "Add" button in the upcoming-tasks column header. Doesn't
     // take focus away from the existing current task — adding tasks is a
     // queueing action, not "switch to this now."
     $(document).on('click', '#objective-task-add-toplevel', () => {
         if (!state.currentObjective) return;
         state.currentObjective.addTask('New Task');
         updateUiTaskList();
-    });
-
-    // "Add" button in the subtasks panel — adds a child under the selected
-    // task. This replaces the per-row fork/branch icon: instead of drilling
-    // into a task to add to it, you select it and add from the right column.
-    $(document).on('click', '#objective-add-subtask', () => {
-        const selected = getSelectedTask();
-        if (!selected) return;
-        selected.addTask('New Subtask');
-        setSelectedTask(selected.id);
     });
 
     loadSettings();
