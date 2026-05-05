@@ -1,0 +1,61 @@
+{
+  "description": "Conquer the World",
+  "tasks": [
+    {
+      "description": "Establish a Power Base",
+      "completed": true,
+      "children": [
+        { "description": "Acquire significant wealth through a business empire", "completed": true },
+        { "description": "Build a loyal inner circle of advisors and lieutenants", "completed": true },
+        { "description": "Secure a defensible territory as headquarters", "completed": true }
+      ]
+    },
+    {
+      "description": "Eliminate Major Rivals",
+      "completed": false,
+      "children": [
+        { "description": "Identify the three most credible threats", "completed": true },
+        { "description": "Form temporary alliances against the strongest of them", "completed": false, "duration": 5 },
+        { "description": "Strike decisively when an opening appears", "completed": false }
+      ]
+    },
+    {
+      "description": "Control the Flow of Information",
+      "completed": false,
+      "children": [
+        { "description": "Acquire major media outlets through shell companies", "completed": false, "duration": 3 },
+        { "description": "Cultivate friendly journalists and influencers", "completed": false },
+        { "description": "Develop covert surveillance and signals intelligence capability", "completed": false }
+      ]
+    },
+    {
+      "description": "Win Hearts and Minds",
+      "completed": false,
+      "children": [
+        { "description": "Fund visible public-works projects in key regions", "completed": false },
+        { "description": "Suppress dissent through soft means before resorting to force", "completed": false },
+        { "description": "Cultivate a charismatic public persona — a cult of personality", "completed": false, "duration": 10 }
+      ]
+    },
+    {
+      "description": "Expand Beyond Current Borders",
+      "completed": false,
+      "children": [
+        { "description": "Isolate remaining powers diplomatically", "completed": false },
+        { "description": "Apply asymmetric economic pressure on holdouts", "completed": false },
+        { "description": "Project military force only when the time is right", "completed": false, "duration": 8 }
+      ]
+    },
+    {
+      "description": "Consolidate Global Rule",
+      "completed": false,
+      "children": [
+        { "description": "Install loyal regional governors with limited autonomy", "completed": false },
+        { "description": "Standardize laws, currency, and language across the realm", "completed": false },
+        { "description": "Crush rebellions before they spread, but spare the contrite", "completed": false }
+      ]
+    }
+  ],
+  "exportDate": "2026-05-05T00:00:00.000Z",
+  "version": "1.0"
+}

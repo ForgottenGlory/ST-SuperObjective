@@ -144,12 +144,17 @@
                     <div id="objective-task-detail-subtasks" class="objective-task-detail-list"></div>
                 </section>
 
-                <div class="objective-task-detail-duration-row">
-                    <label for="objective-task-detail-duration"><small>Duration:</small></label>
-                    <input id="objective-task-detail-duration" class="text_pole widthUnset" type="number" min="0" max="50" value="0">
-                    <small>messages</small>
-                    <small id="objective-task-detail-duration-progress" class="objective-task-detail-duration-progress"></small>
-                    <button id="objective-task-detail-duration-reset" class="menu_button" type="button" style="display: none;">Reset</button>
+                <div class="objective-task-detail-duration-section">
+                    <div class="objective-task-detail-duration-row">
+                        <label for="objective-task-detail-duration"><small>Duration:</small></label>
+                        <input id="objective-task-detail-duration" class="text_pole widthUnset" type="number" min="0" max="50" value="0">
+                        <small>messages</small>
+                        <small id="objective-task-detail-duration-progress" class="objective-task-detail-duration-progress"></small>
+                        <button id="objective-task-detail-duration-reset" class="menu_button" type="button" style="display: none;">Reset</button>
+                    </div>
+                    <small class="objective-task-detail-helper">
+                        Minimum messages before this task can be auto-completed by the AI. Leave at 0 to allow completion any time.
+                    </small>
                 </div>
 
                 <footer class="objective-task-detail-footer">

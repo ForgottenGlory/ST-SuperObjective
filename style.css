@@ -233,13 +233,25 @@
     opacity: 1;
 }
 
-/* Description fills remaining width and wraps. */
-.objective-task-item .objective-task {
+/* Body column: description on top, optional "Subtasks: 1/3" hint below.
+   Stretches to fill remaining row width between the form controls. */
+.objective-task-card-body {
     flex: 1;
     min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.objective-task-item .objective-task {
     word-break: break-word;
     line-height: 1.4;
     cursor: text;
+}
+
+.objective-task-card-hint {
+    opacity: 0.6;
+    font-size: 0.8em;
 }
 
 /* Form controls + right-side icons sit at the description's first line. */
@@ -643,14 +655,25 @@
     min-height: 0;
 }
 
-/* Inline duration metadata row, sits between subtasks and footer. */
+/* Duration section: inline row + helper text, with a divider above. */
+.objective-task-detail-duration-section {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding-top: 8px;
+    border-top: 1px solid var(--SmartThemeBorderColor, #444);
+}
+
 .objective-task-detail-duration-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 0;
-    border-top: 1px solid var(--SmartThemeBorderColor, #444);
     flex-wrap: wrap;
+}
+
+.objective-task-detail-helper {
+    opacity: 0.65;
+    line-height: 1.4;
 }
 
 .objective-task-detail-duration-row label {
