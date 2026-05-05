@@ -295,7 +295,9 @@
     display: flex;
     flex-direction: column;
     width: min(96vw, 1100px);
-    height: min(70vh, 70dvh);
+    /* Auto-size to content, cap at 70vh; columns shrink when there are
+       few tasks and grow up to the cap, then their lists scroll. */
+    max-height: min(70vh, 70dvh);
     margin: auto;
     overflow: hidden;
     gap: 10px;
@@ -374,6 +376,45 @@
     width: 100%;
 }
 
+/* ---- Objective ribbon (overarching goal — most prominent metadata) ---- */
+.objective-workspace-objective-ribbon {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 6px 10px;
+    border: 1px solid var(--SmartThemeBorderColor, #444);
+    border-radius: 6px;
+    min-width: 0;
+}
+
+.objective-workspace-objective-ribbon small {
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+
+.objective-workspace-objective-input {
+    flex: 1;
+    min-width: 0;
+    padding: 4px 6px;
+    font-size: 1.05em;
+    font-weight: 500;
+    background: transparent;
+    color: inherit;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    transition: border-color 0.15s, background-color 0.15s;
+}
+
+.objective-workspace-objective-input:hover {
+    border-color: var(--SmartThemeBorderColor, #444);
+}
+
+.objective-workspace-objective-input:focus {
+    outline: none;
+    border-color: var(--SmartThemeQuoteColor, #4c7bd9);
+    background-color: rgba(255, 255, 255, 0.03);
+}
+
 /* ---- Full-width current-task ribbon ---- */
 .objective-workspace-currenttask-ribbon {
     display: flex;
@@ -405,13 +446,14 @@
     flex-shrink: 0;
 }
 
-/* ---- Body: two columns (Upcoming + Completed) ---- */
+/* ---- Body: two columns (Upcoming + Completed). Sizes to content; the
+   panel max-height + list max-heights below provide the upper bound. ---- */
 .objective-workspace-body {
-    flex: 1;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 10px;
     min-height: 0;
+    align-items: start;
 }
 
 .objective-workspace-col {
@@ -457,10 +499,12 @@
     flex-wrap: wrap;
 }
 
-/* Lists fill the available column space and scroll internally. */
+/* Lists size to their content and scroll internally once they hit the
+   cap — combined with the panel's max-height, this gives the
+   "shrink-when-empty / grow-with-tasks" behavior. */
 .objective-workspace-list,
 .objective-workspace-tasks-list {
-    flex: 1;
+    max-height: 50vh;
     min-height: 0;
     overflow-y: auto;
 }
