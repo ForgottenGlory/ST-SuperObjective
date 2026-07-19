@@ -1505,6 +1505,7 @@ function initSortable() {
         $('#objective-tasks').sortable({
             items: '> .objective-task-item',
             handle: '[id^=objective-task-drag-]',
+			cancel: '[contenteditable="true"], input, textarea, select, .objective-task-button',
             placeholder: 'ui-sortable-placeholder',
             opacity: 0.7,
             cursor: 'grabbing',
@@ -1549,7 +1550,7 @@ function initSortable() {
                 // Save the new state
                 saveState();
             }
-        }).disableSelection();
+        });
     } else {
         console.warn("jQuery UI sortable not available. Drag-and-drop task reordering is disabled.");
         // Add a small notice at the top of the task list
